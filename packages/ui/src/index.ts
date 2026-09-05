@@ -5,7 +5,7 @@ export type { UIOptions, ResolvedUIOptions, UIContext, CartMode, CheckoutPlaceme
 export { GCartDrawer, GCart } from "./drawer";
 export { GCartBadge, GCartLauncher } from "./badge";
 export { GBuyBox, GPrice, GAddToCart } from "./buy-box";
-export { GCheckout } from "./checkout";
+export { GCheckout, resolveAccent } from "./checkout";
 export { GOrderStatus } from "./order-status";
 export { openDialog } from "./dialog";
 export type { DialogHandle, DialogOptions } from "./dialog";

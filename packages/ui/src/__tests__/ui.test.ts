@@ -479,3 +479,49 @@ describe("elements that exist before the SDK loads", () => {
     expect(document.querySelector("g-cart-badge")?.textContent).toBe("0");
   });
 });
+
+describe("theming precedence", () => {
+  it("declares theme variables at zero specificity so the site's :root always wins", async () => {
+    const { themeCss, BASE_CSS } = await import("../styles");
+    expect(themeCss({ accent: "#ff0000" })).toMatch(/^:where\(:root\)\{/);
+    // Every component rule is lowered to :where([data-g-ui]); no bare [data-g-ui] remains.
+    expect(BASE_CSS.match(/(?<!\()\[data-g-ui\]/g)).toBeNull();
+    expect(BASE_CSS).toContain(":where([data-g-ui]) .g-btn-primary{background:var(--g-accent)");
+  });
+
+  it("paints the payment form with the CSS variable, not the store default", async () => {
+    const { resolveAccent } = await import("../checkout");
+    const el = document.createElement("div");
+    const spy = vi.spyOn(window, "getComputedStyle").mockReturnValue({ getPropertyValue: () => "  #7b4a2f " } as unknown as CSSStyleDeclaration);
+    expect(resolveAccent(el, "#4f46e5")).toBe("#7b4a2f");
+    spy.mockReturnValue({ getPropertyValue: () => "" } as unknown as CSSStyleDeclaration);
+    expect(resolveAccent(el, "#4f46e5")).toBe("#4f46e5");
+    expect(resolveAccent(el, "")).toBe("#111827");
+    spy.mockRestore();
+  });
+});
+
+describe("checkout on a phone", () => {
+  it("starts with the order summary folded to one line and toggles it", async () => {
+    (window as unknown as { matchMedia: unknown }).matchMedia = (query: string) => ({ matches: /max-width: 860px/.test(query), media: query, addEventListener() {}, removeEventListener() {} });
+    try {
+      setup();
+      await commerce.cart.add({ productId: "a", unitAmount: 500 });
+      const checkout = document.createElement("g-checkout") as GCheckout;
+      document.body.appendChild(checkout);
+      await settle(10);
+      const summary = checkout.querySelector(".g-checkout-summary")!;
+      const toggle = checkout.querySelector<HTMLButtonElement>(".g-summary-toggle")!;
+      expect(summary.hasAttribute("data-collapsed")).toBe(true);
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+      expect(toggle.textContent).toContain("$5.00");
+      expect(toggle.getAttribute("aria-controls")).toBe(checkout.querySelector(".g-summary-body")!.id);
+      toggle.click();
+      expect(summary.hasAttribute("data-collapsed")).toBe(false);
+      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+      expect(checkout.querySelector(".g-pay-bar [data-pay]")).not.toBeNull();
+    } finally {
+      delete (window as unknown as { matchMedia?: unknown }).matchMedia;
+    }
+  });
+});

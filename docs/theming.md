@@ -1,6 +1,10 @@
 # Theming
 
-The UI is plain light DOM styled by one injected stylesheet, scoped under `[data-g-ui]`, and driven by CSS custom properties. The store's accent colour (Commerce → Settings → Appearance) is applied automatically; anything you set wins over it.
+The UI is plain light DOM styled by one injected stylesheet and driven by CSS custom properties. Precedence is a contract, not an accident:
+
+1. **Your CSS variables always win.** The SDK declares its defaults (and the store's accent colour from Commerce → Settings → Appearance) on `:where(:root)`, which has zero specificity. A `:root { --g-accent: … }` in your own stylesheet beats it no matter where the SDK's `<style>` lands in the document.
+2. **Class overrides need two parts.** SDK component rules are written as `:where([data-g-ui]) .g-btn-primary`, i.e. the weight of a single class. Write your override as `[data-g-ui] .g-btn-primary { … }` (or `.g-cart-drawer .g-btn-primary`) and it wins; a generic reset like `button { background: transparent }` does not leak in.
+3. Payment forms follow the same variable: the Stripe Payment Element and the Razorpay overlay read the computed `--g-accent`, so they match your buttons.
 
 ## Variables
 
@@ -32,7 +36,7 @@ Set them in your own CSS, through the script tag (`data-accent`, `data-font`, `d
 
 ## Overriding parts
 
-Every piece has a stable class: `.g-cart-drawer`, `.g-cart-line`, `.g-btn`, `.g-btn-primary`, `.g-checkout-layout`, `.g-checkout-summary`, `.g-buybox`, `.g-chip`, `.g-order`… Selectors in the SDK stylesheet are prefixed with `[data-g-ui]`, so your override needs the same or more specificity:
+Every piece has a stable class: `.g-cart-drawer`, `.g-cart-line`, `.g-btn`, `.g-btn-primary`, `.g-checkout-layout`, `.g-checkout-summary`, `.g-summary-toggle`, `.g-pay-bar`, `.g-buybox`, `.g-chip`, `.g-order`… SDK selectors carry single-class weight, so any two-part selector of yours wins:
 
 ```css
 [data-g-ui] .g-btn-primary { text-transform: uppercase; letter-spacing: .06em; }

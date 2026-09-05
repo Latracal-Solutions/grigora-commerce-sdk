@@ -1,9 +1,17 @@
 /*
-  One stylesheet for every SDK surface, scoped under [data-g-ui] so a host
-  page's own `.g-cart-*` rules (older Grigora storefronts ship some) can never
-  outrank it. Theming is done with CSS custom properties on :root; the values
-  below are the defaults and the store's accent colour is applied on top when
-  the settings load.
+  One stylesheet for every SDK surface.
+
+  Precedence is deliberate and is the contract with integrators:
+
+  - Theme variables are declared on `:where(:root)`, which has zero
+    specificity. A site's own `:root { --g-accent: … }` therefore always wins,
+    no matter where the SDK's <style> lands in the document. The store's
+    accent colour from its settings is the lowest default, not an override.
+  - Component rules are prefixed with `:where([data-g-ui])`, so they carry the
+    specificity of a single class. A site override written as
+    `[data-g-ui] .g-btn-primary { … }` (or any two-part selector) beats them,
+    while a generic reset such as `button { background: transparent }` does not
+    leak in.
 */
 
 export interface UITheme {
@@ -64,10 +72,10 @@ export function themeCss(theme: Partial<UITheme> = {}): string {
       return SAFE_CSS_VALUE.test(value) ? `${THEME_VARS[key]}:${value};` : `${THEME_VARS[key]}:${DEFAULT_THEME[key]};`;
     })
     .join("");
-  return `:root{${declarations}}`;
+  return `:where(:root){${declarations}}`;
 }
 
-export const BASE_CSS = `
+const RAW_CSS = `
 [data-g-ui],[data-g-ui] *,[data-g-ui] *::before,[data-g-ui] *::after{box-sizing:border-box}
 [data-g-ui]{font-family:var(--g-font);color:var(--g-fg);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
 [data-g-ui] button,[data-g-ui] input,[data-g-ui] select{font:inherit;color:inherit}
@@ -247,7 +255,27 @@ export const BASE_CSS = `
 g-cart-badge[data-g-ui]{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--g-accent);color:var(--g-accent-contrast);font-size:12px;font-weight:700;line-height:1}
 g-cart-badge[data-g-ui][hidden]{display:none}
 [data-g-ui] .g-added{color:var(--g-success)}
+
+/* Checkout summary: collapsible on small screens */
+[data-g-ui] .g-summary-toggle{display:none;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:0;border:0;background:transparent;font:inherit;font-weight:700;text-align:left}
+[data-g-ui] .g-summary-toggle svg{width:18px;height:18px;transition:transform .2s;flex:0 0 auto}
+[data-g-ui] .g-summary-toggle[aria-expanded="true"] svg{transform:rotate(180deg)}
+[data-g-ui] .g-summary-toggle-total{margin-left:auto;font-weight:700}
+[data-g-ui] .g-summary-body{display:flex;flex-direction:column;gap:14px}
+@media (max-width:860px){
+  [data-g-ui] .g-checkout-summary{position:static;padding:14px 16px;gap:10px}
+  [data-g-ui] .g-summary-toggle{display:flex}
+  [data-g-ui] .g-summary-heading{display:none}
+  [data-g-ui] .g-checkout-summary[data-collapsed] .g-summary-body{display:none}
+  [data-g-ui] .g-section{padding:16px}
+  [data-g-ui] .g-input,[data-g-ui] .g-select{font-size:16px}
+  [data-g-ui] .g-pay-bar{position:sticky;bottom:0;z-index:1;padding:10px 0 12px;background:var(--g-bg);border-top:1px solid var(--g-line)}
+  [data-g-ui] .g-checkout-head{flex-wrap:wrap}
+}
 `;
+
+/** RAW_CSS with every `[data-g-ui]` lowered to `:where([data-g-ui])` — see the note at the top of this file. */
+export const BASE_CSS = RAW_CSS.replace(/\[data-g-ui\]/g, ":where([data-g-ui])");
 
 export const STYLE_ID = "grigora-commerce-ui";
 export const THEME_STYLE_ID = "grigora-commerce-theme";

@@ -7,7 +7,7 @@
   {
     "name": "@grigora/commerce-ui (ESM, brotli, excludes core)",
     "path": "packages/ui/dist/index.js",
-    "limit": "25 KB"
+    "limit": "26 KB"
   },
   {
     "name": "@grigora/commerce-adapter-stripe (ESM, brotli)",

@@ -33,6 +33,10 @@ Subscriptions are not sellable through the public API yet; the buy box shows the
 3. **Payment** – "Continue to payment" creates the order and mounts the payment form (embedded) or redirects (hosted). Editing anything after that cancels the pending order (`POST /checkout/cancel`) and goes back to step 1 with a note.
 4. **Return** – the shopper lands on `successUrl` with `order_id` and `lookup_token`. `<g-order-status>` (or the automatic dialog) verifies the order through `POST /orders/lookup`, polls while pending, clears the cart when paid.
 
+## On a phone
+
+Below 860px the layout is one column: the order summary folds to a single line ("Order summary · $58.00") that expands on tap, form sections stack, inputs are 16px (no iOS zoom), and the pay button sticks to the bottom of the viewport. In the dialog placement the checkout goes full-screen below 640px.
+
 ## Return URLs
 
 - Default `successUrl` is the current page. The SDK detects the return parameters on any page it runs on, so a single-page integration (Webflow, a landing page) needs no extra route.

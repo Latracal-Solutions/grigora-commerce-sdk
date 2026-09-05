@@ -62,6 +62,7 @@ const ICONS: Record<string, string> = {
   card: '<rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/>',
   tag: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
   external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  chevron: '<path d="m6 9 6 6 6-6"/>',
 };
 
 /** Inline SVG from a fixed, trusted set of paths. */

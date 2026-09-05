@@ -242,7 +242,7 @@ export class GCheckout extends HTMLElement {
       e.ratesBlock,
       e.paymentBlock,
       e.message,
-      e.payButton,
+      h("div", { class: "g-pay-bar" }, e.payButton),
       h("div", { class: "g-secure" }, icon("lock", 14), h("span", null, this.t("secureCheckout")), e.testMode)
     );
     e.form = form;
@@ -250,13 +250,36 @@ export class GCheckout extends HTMLElement {
     e.summaryLines = h("div", { class: "g-summary-lines" });
     e.summaryRows = h("div", { class: "g-rows" });
     e.discount = h("div", null);
+    e.summaryToggleTotal = h("span", { class: "g-summary-toggle-total" });
+    const summaryBodyId = `g-summary-${Math.random().toString(36).slice(2, 8)}`;
+    e.summaryBody = h("div", { class: "g-summary-body", id: summaryBodyId }, e.summaryLines, e.discount, e.summaryRows);
+    // On a phone the summary starts folded to a single line with the total;
+    // on wider screens it is always open and the toggle is not shown.
+    const startCollapsed = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 860px)").matches;
+    e.summaryToggle = h(
+      "button",
+      {
+        type: "button",
+        class: "g-summary-toggle",
+        "aria-expanded": startCollapsed ? "false" : "true",
+        "aria-controls": summaryBodyId,
+        onClick: () => {
+          const collapsed = e.summary.hasAttribute("data-collapsed");
+          if (collapsed) e.summary.removeAttribute("data-collapsed");
+          else e.summary.setAttribute("data-collapsed", "");
+          e.summaryToggle.setAttribute("aria-expanded", collapsed ? "true" : "false");
+        },
+      },
+      h("span", null, this.t("orderSummary")),
+      e.summaryToggleTotal,
+      icon("chevron", 18)
+    );
     e.summary = h(
       "aside",
-      { class: "g-checkout-summary", "aria-label": this.t("orderSummary") },
-      h("h3", { style: "margin:0;font-size:15px" }, this.t("orderSummary")),
-      e.summaryLines,
-      e.discount,
-      e.summaryRows
+      { class: "g-checkout-summary", "aria-label": this.t("orderSummary"), "data-collapsed": startCollapsed ? "" : null },
+      e.summaryToggle,
+      h("h3", { class: "g-summary-heading", style: "margin:0;font-size:15px" }, this.t("orderSummary")),
+      e.summaryBody
     );
 
     replaceChildren(
@@ -464,6 +487,7 @@ export class GCheckout extends HTMLElement {
     }
     rows.push(h("div", { class: "g-row g-row-total" }, h("span", null, cart.totalIsEstimate && cart.validated ? `${this.t("total")} (${this.t("estimated").toLowerCase()})` : this.t("total")), h("span", null, money(cart.validated ? cart.totalAmount : cart.subtotalAmount))));
     replaceChildren(this.els.summaryRows, ...rows);
+    setText(this.els.summaryToggleTotal, money(cart.validated ? cart.totalAmount : cart.subtotalAmount));
   }
 
   private renderDiscount(cart: Cart): void {
@@ -718,7 +742,7 @@ export class GCheckout extends HTMLElement {
   private makeAdapterContext(session: CheckoutSession): PaymentAdapterContext {
     const commerce = this.commerceOrThrow();
     const successUrl = commerce.checkout.defaultSuccessUrl();
-    const accent = this.store?.appearance.accentColor || getComputedStyle(this).getPropertyValue("--g-accent").trim() || "#111827";
+    const accent = resolveAccent(this, this.store?.appearance.accentColor || "");
     return {
       commerce,
       session,
@@ -781,4 +805,22 @@ export class GCheckout extends HTMLElement {
     const target = explicitUrl && /^https?:/.test(explicitUrl) ? explicitUrl : withOrderParams(commerce.checkout.defaultSuccessUrl(), orderId, lookupToken);
     commerce.navigate(target);
   }
+}
+
+/**
+ * The accent the payment form should use: the site's CSS variable first (that
+ * is what the rest of the UI is painted with), the store's setting only as a
+ * fallback, then the SDK default.
+ */
+export function resolveAccent(element: Element, storeAccent = ""): string {
+  let computed = "";
+  try {
+    computed = getComputedStyle(element).getPropertyValue("--g-accent").trim();
+  } catch {
+    computed = "";
+  }
+  const valid = (value: string) => /^#[0-9a-f]{3,8}$/i.test(value) || /^(rgb|hsl|oklch|color)\(/i.test(value);
+  if (valid(computed)) return computed;
+  if (valid(storeAccent)) return storeAccent;
+  return "#111827";
 }
