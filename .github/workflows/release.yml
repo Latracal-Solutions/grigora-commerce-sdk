@@ -21,6 +21,10 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      # The secrets context is not allowed in a step `if`; expose the check as an env flag.
+      HAS_AWS: ${{ secrets.AWS_ACCESS_ID != '' }}
+      CDN_DISTRIBUTION_ID: ${{ secrets.CDN_CLOUDFRONT_DISTRIBUTION_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,7 +54,7 @@ jobs:
         run: node scripts/publish-all.mjs
 
       - name: Upload the CDN bundle
-        if: ${{ secrets.AWS_ACCESS_ID != '' }}
+        if: env.HAS_AWS == 'true'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
@@ -76,8 +80,8 @@ jobs:
             aws s3 cp "$map" "s3://$BUCKET/commerce/$MAJOR/$base" --content-type application/json --cache-control "public, max-age=300"
             aws s3 cp "$map" "s3://$BUCKET/commerce/latest/$base" --content-type application/json --cache-control "public, max-age=300"
           done
-          if [ -n "${{ secrets.CDN_CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
-            aws cloudfront create-invalidation --distribution-id "${{ secrets.CDN_CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/commerce/$MAJOR/*" "/commerce/latest/*"
+          if [ -n "$CDN_DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation --distribution-id "$CDN_DISTRIBUTION_ID" --paths "/commerce/$MAJOR/*" "/commerce/latest/*"
           fi
 
       - name: GitHub release
