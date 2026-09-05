@@ -54,4 +54,8 @@ node scripts/set-version.mjs 0.2.0   # bumps every package, dependency ranges an
 git commit -am "Release 0.2.0" && git tag v0.2.0 && git push --follow-tags
 ```
 
-The release workflow publishes to npm (with provenance) and uploads the CDN bundle. Required repository secrets: `NPM_TOKEN`; `AWS_ACCESS_ID` and `AWS_ACCESS_KEY` with write access to the `cdn-grigora-co` bucket; optional `CDN_CLOUDFRONT_DISTRIBUTION_ID`.
+The release workflow publishes to npm (with provenance) and uploads the CDN bundle.
+
+The Grigora API also serves the bundle at `/general/commerce/sdk/v1/sdk.js` for AI-built sites. After a release, run `npm run sync:api` (with `../grigora-api-new` checked out beside this repo, or pass its path) and commit the vendored files there.
+
+Required repository secrets: `NPM_TOKEN`; `AWS_ACCESS_ID` and `AWS_ACCESS_KEY` with write access to the `cdn-grigora-co` bucket; optional `CDN_CLOUDFRONT_DISTRIBUTION_ID`.
