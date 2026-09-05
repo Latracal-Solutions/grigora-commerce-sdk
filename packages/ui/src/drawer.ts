@@ -1,5 +1,5 @@
 import type { Cart, CartLine, GrigoraCommerce } from "@grigora/commerce-core";
-import { getContext, requireContext, type UIContext } from "./context";
+import { getContext, requireContext, whenContext, type UIContext } from "./context";
 import { clear, h, icon, image, lockScroll, replaceChildren, safeHref, trapFocus } from "./dom";
 
 let idCounter = 0;
@@ -33,6 +33,7 @@ export class GCartDrawer extends HTMLElement {
   private discountBusy = false;
   private discountMessage: { text: string; type: "error" | "success" } | null = null;
   private pendingFocusKey = "";
+  private unwait: (() => void) | null = null;
 
   static get observedAttributes(): string[] {
     return ["open"];
@@ -40,7 +41,13 @@ export class GCartDrawer extends HTMLElement {
 
   connectedCallback(): void {
     this.ctx = getContext();
-    if (!this.ctx && !this.commerce) return;
+    if (!this.ctx && !this.commerce) {
+      this.unwait = whenContext(() => {
+        this.unwait = null;
+        if (this.isConnected) this.connectedCallback();
+      });
+      return;
+    }
     this.build();
     const commerce = this.commerceOrThrow();
     this.unsubscribe = commerce.on("cart:changed", (cart) => this.render(cart));
@@ -49,6 +56,8 @@ export class GCartDrawer extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.unwait?.();
+    this.unwait = null;
     this.unsubscribe?.();
     this.unsubscribe = null;
     if (this.isOpen) this.hide(false);
@@ -61,7 +70,8 @@ export class GCartDrawer extends HTMLElement {
   }
 
   private commerceOrThrow(): GrigoraCommerce {
-    return this.commerce || requireContext().commerce;
+    // The instance this element connected with; the global only as a last resort.
+    return this.commerce || this.ctx?.commerce || requireContext().commerce;
   }
 
   private commerceOrNull(): GrigoraCommerce | null {

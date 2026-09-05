@@ -15,7 +15,7 @@ import {
   type PaymentProviderAdapter,
   type StoreSettings,
 } from "@grigora/commerce-core";
-import { getContext, requireContext, type UIContext } from "./context";
+import { getContext, requireContext, whenContext, type UIContext } from "./context";
 import { COUNTRIES } from "./countries";
 import { debounce, h, icon, image, replaceChildren, setText, toggle } from "./dom";
 import { GOrderStatus } from "./order-status";
@@ -89,6 +89,7 @@ export class GCheckout extends HTMLElement {
   private discountBusy = false;
   private discountMessage: { text: string; type: "error" | "success" } | null = null;
   private providerAcknowledged = false;
+  private unwait: (() => void) | null = null;
   private readonly scheduleQuote = debounce(() => void this.quote(), 450);
   private onPageHide = () => {
     if (this.session && this.phase === "payment" && !this.providerAcknowledged) void this.commerceOrThrow().checkout.cancel(this.session);
@@ -96,7 +97,13 @@ export class GCheckout extends HTMLElement {
 
   connectedCallback(): void {
     this.ctx = getContext();
-    if (!this.ctx && !this.commerce) return;
+    if (!this.ctx && !this.commerce) {
+      this.unwait = whenContext(() => {
+        this.unwait = null;
+        if (this.isConnected) this.connectedCallback();
+      });
+      return;
+    }
     this.setAttribute("data-g-ui", "");
     this.classList.add("g-checkout");
     const commerce = this.commerceOrThrow();
@@ -107,6 +114,8 @@ export class GCheckout extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.unwait?.();
+    this.unwait = null;
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.scheduleQuote.cancel();
@@ -115,7 +124,8 @@ export class GCheckout extends HTMLElement {
   }
 
   private commerceOrThrow(): GrigoraCommerce {
-    return this.commerce || requireContext().commerce;
+    // The instance this element connected with; the global only as a last resort.
+    return this.commerce || this.ctx?.commerce || requireContext().commerce;
   }
 
   private t(key: Parameters<UIContext["t"]>[0], vars?: Record<string, string | number>): string {

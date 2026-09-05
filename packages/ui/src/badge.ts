@@ -1,15 +1,22 @@
 import type { Cart, GrigoraCommerce } from "@grigora/commerce-core";
-import { getContext, requireContext } from "./context";
+import { getContext, requireContext, whenContext } from "./context";
 import { h, icon, replaceChildren } from "./dom";
 
 /** <g-cart-badge>: the live item count. Hidden at zero unless `show-zero` is set. */
 export class GCartBadge extends HTMLElement {
   commerce?: GrigoraCommerce;
   private unsubscribe: (() => void) | null = null;
+  private unwait: (() => void) | null = null;
 
   connectedCallback(): void {
     const commerce = this.commerce || getContext()?.commerce;
-    if (!commerce) return;
+    if (!commerce) {
+      this.unwait = whenContext(() => {
+        this.unwait = null;
+        if (this.isConnected) this.connectedCallback();
+      });
+      return;
+    }
     this.setAttribute("data-g-ui", "");
     this.setAttribute("aria-live", "polite");
     this.setAttribute("aria-atomic", "true");
@@ -18,6 +25,8 @@ export class GCartBadge extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.unwait?.();
+    this.unwait = null;
     this.unsubscribe?.();
     this.unsubscribe = null;
   }
@@ -32,10 +41,18 @@ export class GCartBadge extends HTMLElement {
 /** <g-cart-launcher>: a cart button with the badge, wired to open the cart. */
 export class GCartLauncher extends HTMLElement {
   commerce?: GrigoraCommerce;
+  private unwait: (() => void) | null = null;
 
   connectedCallback(): void {
     const ctx = getContext();
-    if (!ctx && !this.commerce) return;
+    if (!ctx && !this.commerce) {
+      this.unwait = whenContext(() => {
+        this.unwait = null;
+        if (this.isConnected) this.connectedCallback();
+      });
+      return;
+    }
+    this.unwait = null;
     const t = (ctx || requireContext()).t;
     this.setAttribute("data-g-ui", "");
     const badge = document.createElement("g-cart-badge") as GCartBadge;

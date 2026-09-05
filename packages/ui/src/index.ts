@@ -1,6 +1,6 @@
 export { installUI, defineElements } from "./install";
 export type { UIHandle } from "./install";
-export { resolveUIOptions, getContext, requireContext } from "./context";
+export { resolveUIOptions, getContext, requireContext, whenContext } from "./context";
 export type { UIOptions, ResolvedUIOptions, UIContext, CartMode, CheckoutPlacement } from "./context";
 export { GCartDrawer, GCart } from "./drawer";
 export { GCartBadge, GCartLauncher } from "./badge";

@@ -1,5 +1,5 @@
 import { orderReference, type GrigoraCommerce, type Order } from "@grigora/commerce-core";
-import { getContext, requireContext, type UIContext } from "./context";
+import { getContext, requireContext, whenContext, type UIContext } from "./context";
 import { h, icon, replaceChildren, safeHref } from "./dom";
 import { getReturn } from "./return";
 
@@ -24,10 +24,17 @@ export class GOrderStatus extends HTMLElement {
   private polls = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private inFlight = false;
+  private unwait: (() => void) | null = null;
 
   connectedCallback(): void {
     this.ctx = getContext();
-    if (!this.ctx && !this.commerce) return;
+    if (!this.ctx && !this.commerce) {
+      this.unwait = whenContext(() => {
+        this.unwait = null;
+        if (this.isConnected) this.connectedCallback();
+      });
+      return;
+    }
     this.setAttribute("data-g-ui", "");
     this.classList.add("g-order");
     this.setAttribute("aria-live", "polite");
@@ -35,12 +42,15 @@ export class GOrderStatus extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.unwait?.();
+    this.unwait = null;
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
   }
 
   private commerceOrThrow(): GrigoraCommerce {
-    return this.commerce || requireContext().commerce;
+    // The instance this element connected with; the global only as a last resort.
+    return this.commerce || this.ctx?.commerce || requireContext().commerce;
   }
 
   private t(key: Parameters<UIContext["t"]>[0], vars?: Record<string, string | number>): string {

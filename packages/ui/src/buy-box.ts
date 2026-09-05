@@ -1,5 +1,5 @@
 import { isValidEmail, type GrigoraCommerce, type Product, type ProductVariant } from "@grigora/commerce-core";
-import { getContext, requireContext, type UIContext } from "./context";
+import { getContext, requireContext, whenContext, type UIContext } from "./context";
 import { openDialog } from "./dialog";
 import { h, icon, replaceChildren, dispatch } from "./dom";
 
@@ -20,6 +20,9 @@ export class GBuyBox extends HTMLElement {
   private addedTimer: ReturnType<typeof setTimeout> | null = null;
   private pwywAmount = 0;
   private unsubscribe: (() => void) | null = null;
+  private unwait: (() => void) | null = null;
+  /** True once connected with a context; attribute changes before that are ignored (upgrade fires them first). */
+  private started = false;
 
   static get observedAttributes(): string[] {
     return ["product", "variant"];
@@ -27,7 +30,14 @@ export class GBuyBox extends HTMLElement {
 
   connectedCallback(): void {
     this.ctx = getContext();
-    if (!this.ctx && !this.commerce) return;
+    if (!this.ctx && !this.commerce) {
+      this.unwait = whenContext(() => {
+        this.unwait = null;
+        if (this.isConnected) this.connectedCallback();
+      });
+      return;
+    }
+    this.started = true;
     this.setAttribute("data-g-ui", "");
     this.classList.add("g-buybox");
     this.quantity = Math.max(1, Number(this.getAttribute("quantity")) || 1);
@@ -36,19 +46,23 @@ export class GBuyBox extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.started = false;
+    this.unwait?.();
+    this.unwait = null;
     this.unsubscribe?.();
     this.unsubscribe = null;
     if (this.addedTimer) clearTimeout(this.addedTimer);
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
-    if (oldValue === newValue || !this.isConnected) return;
+    if (oldValue === newValue || !this.started || !this.isConnected) return;
     if (name === "product") void this.load();
     if (name === "variant") this.applyVariantAttribute();
   }
 
   private commerceOrThrow(): GrigoraCommerce {
-    return this.commerce || requireContext().commerce;
+    // The instance this element connected with; the global only as a last resort.
+    return this.commerce || this.ctx?.commerce || requireContext().commerce;
   }
 
   private t(key: Parameters<UIContext["t"]>[0], vars?: Record<string, string | number>): string {
@@ -56,6 +70,7 @@ export class GBuyBox extends HTMLElement {
   }
 
   async load(): Promise<void> {
+    if (!this.started) return;
     const key = (this.getAttribute("product") || "").trim();
     this.product = null;
     this.message = null;
@@ -372,7 +387,12 @@ export class GPrice extends HTMLElement {
 
   connectedCallback(): void {
     const commerce = this.commerce || getContext()?.commerce;
-    if (!commerce) return;
+    if (!commerce) {
+      whenContext(() => {
+        if (this.isConnected) this.connectedCallback();
+      });
+      return;
+    }
     this.setAttribute("data-g-ui", "");
     const key = (this.getAttribute("product") || "").trim();
     if (!key) return;
@@ -396,7 +416,12 @@ export class GAddToCart extends HTMLElement {
   connectedCallback(): void {
     const ctx = getContext();
     const commerce = this.commerce || ctx?.commerce;
-    if (!commerce || !ctx) return;
+    if (!commerce || !ctx) {
+      whenContext(() => {
+        if (this.isConnected) this.connectedCallback();
+      });
+      return;
+    }
     this.setAttribute("data-g-ui", "");
     const label = this.getAttribute("label") || this.textContent?.trim() || ctx.t("addToCart");
     const button = h("button", { type: "button", class: "g-btn g-btn-primary", "data-grigora-add": "", "data-product-slug": this.getAttribute("product") || "" }, icon("cart", 16), label);

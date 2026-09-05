@@ -58,7 +58,6 @@ export function installUI(commerce: GrigoraCommerce, options: UIOptions = {}): U
   const t = makeTranslator(resolved);
   let theme: Partial<UITheme> = { ...resolved.theme };
   if (resolved.injectStyles) injectStyles(document, theme);
-  defineElements();
 
   let checkoutDialog: DialogHandle | null = null;
   let statusDialog: DialogHandle | null = null;
@@ -136,7 +135,11 @@ export function installUI(commerce: GrigoraCommerce, options: UIOptions = {}): U
       showToast(message, type);
     },
   };
+  // Context first, then the element definitions: defining upgrades every
+  // element already in the HTML synchronously, and each one reads the context
+  // in its connectedCallback.
   setContext(ctx);
+  defineElements();
 
   // The store's accent colour becomes the UI accent unless the integrator set one.
   const applyStoreTheme = () => {

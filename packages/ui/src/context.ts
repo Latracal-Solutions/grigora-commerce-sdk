@@ -89,9 +89,36 @@ export interface UIContext {
 }
 
 let current: UIContext | null = null;
+const waiters = new Set<() => void>();
 
 export function setContext(context: UIContext | null): void {
   current = context;
+  if (!context) return;
+  const pending = Array.from(waiters);
+  waiters.clear();
+  for (const waiter of pending) {
+    try {
+      waiter();
+    } catch (error) {
+      console.error("[grigora-commerce] element could not start", error);
+    }
+  }
+}
+
+/**
+ * Run `callback` now if the UI is installed, otherwise the moment it is. Custom
+ * elements already in the HTML are upgraded the instant they are defined, which
+ * can be before the context exists; they park here instead of giving up.
+ */
+export function whenContext(callback: () => void): () => void {
+  if (current) {
+    callback();
+    return () => {};
+  }
+  waiters.add(callback);
+  return () => {
+    waiters.delete(callback);
+  };
 }
 
 export function getContext(): UIContext | null {

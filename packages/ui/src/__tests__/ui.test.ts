@@ -460,3 +460,22 @@ describe("order status", () => {
     expect(document.querySelector(".g-dialog-root g-order-status")?.getAttribute("data-state")).toBe("paid");
   });
 });
+
+describe("elements that exist before the SDK loads", () => {
+  it("render once installUI runs, instead of keeping their placeholder", async () => {
+    // The real page: <g-checkout> and <g-buy-box> are parsed (and, the tag
+    // being already defined from earlier tests, upgraded) before installUI.
+    document.body.innerHTML = `
+      <g-checkout><p id="placeholder">Loading checkout…</p></g-checkout>
+      <g-buy-box product="a"><p>Loading…</p></g-buy-box>
+      <g-cart-badge show-zero></g-cart-badge>`;
+    const checkout = document.querySelector("g-checkout") as GCheckout;
+    expect(checkout.querySelector("#placeholder")).not.toBeNull();
+    setup();
+    await settle(10);
+    expect(checkout.querySelector("#placeholder")).toBeNull();
+    expect(checkout.querySelector("[data-pay]")).not.toBeNull();
+    expect(document.querySelector("g-buy-box [data-buybox-add]")).not.toBeNull();
+    expect(document.querySelector("g-cart-badge")?.textContent).toBe("0");
+  });
+});
