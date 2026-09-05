@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-g-project="YOUR_PROJECT_ID">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grigora Commerce SDK — vanilla example</title>
+    <!--
+      A complete store on one page. Replace YOUR_PROJECT_ID (here and on <html>)
+      and open this file over http (any static server). The SDK reads the
+      catalog, renders a grid, and handles cart, checkout and order status.
+
+      Local development against a local Grigora API: serve from localhost and
+      the SDK targets http://localhost:2706 automatically. Point at a built
+      bundle with src="../../packages/sdk/dist/sdk.js".
+    -->
+    <script src="https://cdn.grigora.co/commerce/v1/sdk.js" data-project="YOUR_PROJECT_ID" data-accent="#0f766e" async></script>
+    <style>
+      :root { --g-accent: #0f766e; --g-radius: 12px; }
+      body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: #111827; }
+      header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid #e5e7eb; }
+      main { max-width: 1080px; margin: 0 auto; padding: 32px 24px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; }
+      .card { display: flex; flex-direction: column; gap: 10px; }
+      .card img { aspect-ratio: 1; width: 100%; object-fit: cover; border-radius: 12px; background: #f3f4f6; }
+      .card h3 { margin: 0; font-size: 16px; }
+      .price { color: #6b7280; }
+      .btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; font: inherit; cursor: pointer; }
+      .btn-primary { background: var(--g-accent); color: #fff; border-color: transparent; }
+      .cart-link { display: inline-flex; gap: 6px; align-items: center; text-decoration: none; color: inherit; font-weight: 600; }
+      [data-cart-count] { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--g-accent); color: #fff; font-size: 12px; display: inline-grid; place-items: center; }
+      [data-cart-count][hidden] { display: none; }
+      dialog.product { border: 0; border-radius: 16px; padding: 24px; max-width: 900px; width: calc(100% - 32px); }
+      .product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      @media (max-width: 720px) { .product-layout { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong id="store-name">Store</strong>
+      <a href="#" class="cart-link" data-cart-open>Cart <span data-cart-count hidden>0</span></a>
+    </header>
+
+    <main>
+      <h1>Products</h1>
+      <p id="status">Loading…</p>
+      <div class="grid" id="grid"></div>
+    </main>
+
+    <!-- Product detail: the buy box handles variants, quantity, add and buy now. -->
+    <dialog class="product" id="product-dialog">
+      <div class="product-layout">
+        <img id="product-image" alt="" />
+        <div>
+          <h2 id="product-title"></h2>
+          <p id="product-description"></p>
+          <g-buy-box id="buy-box"></g-buy-box>
+          <p><button class="btn" onclick="document.getElementById('product-dialog').close()">Close</button></p>
+        </div>
+      </div>
+    </dialog>
+
+    <script>
+      // Everything below is optional: the data attributes alone make the buttons work.
+      // This shows the JavaScript API rendering the catalog and reacting to events.
+      window.Grigora = window.Grigora || { q: [] };
+      Grigora.q.push(function () {
+        Grigora.Commerce.onReady(async function (commerce) {
+          var grid = document.getElementById("grid");
+          var status = document.getElementById("status");
+          try {
+            var catalog = await commerce.products.catalog();
+            document.getElementById("store-name").textContent = catalog.store.storeName;
+            status.hidden = true;
+            catalog.products.forEach(function (product) {
+              var card = document.createElement("article");
+              card.className = "card";
+              var img = document.createElement("img");
+              img.src = product.imageUrl || "";
+              img.alt = product.title;
+              var title = document.createElement("h3");
+              title.textContent = product.title;
+              var price = document.createElement("div");
+              price.className = "price";
+              price.textContent = product.priceFormatted + (product.compareAtFormatted ? "  " + product.compareAtFormatted : "");
+              var view = document.createElement("button");
+              view.className = "btn";
+              view.textContent = "View";
+              view.onclick = function () { openProduct(product); };
+              var add = document.createElement("button");
+              add.className = "btn btn-primary";
+              add.textContent = product.hasVariants ? "Choose options" : "Add to cart";
+              if (product.hasVariants) add.onclick = function () { openProduct(product); };
+              else {
+                add.setAttribute("data-grigora-add", "");
+                add.setAttribute("data-product-id", product.id);
+              }
+              card.append(img, title, price, view, add);
+              grid.appendChild(card);
+            });
+          } catch (error) {
+            status.textContent = error.message;
+          }
+
+          function openProduct(product) {
+            document.getElementById("product-image").src = product.imageUrl || "";
+            document.getElementById("product-title").textContent = product.title;
+            document.getElementById("product-description").textContent = product.description;
+            document.getElementById("buy-box").setAttribute("product", product.slug || product.id);
+            document.getElementById("product-dialog").showModal();
+          }
+
+          commerce.on("cart:line_added", function (event) { console.log("added", event.line.title); });
+          commerce.on("order:paid", function (order) { console.log("paid", order.orderId); });
+        });
+      });
+    </script>
+  </body>
+</html>

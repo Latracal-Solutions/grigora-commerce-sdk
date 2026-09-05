@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "sourceMap": true,
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@grigora/commerce-core": ["packages/core/src/index.ts"],
+      "@grigora/commerce-ui": ["packages/ui/src/index.ts"],
+      "@grigora/commerce-adapter-stripe": ["packages/adapter-stripe/src/index.ts"],
+      "@grigora/commerce-adapter-razorpay": ["packages/adapter-razorpay/src/index.ts"],
+      "@grigora/commerce-react": ["packages/react/src/index.ts"],
+      "@grigora/commerce-vue": ["packages/vue/src/index.ts"],
+      "@grigora/commerce": ["packages/sdk/src/index.ts"]
+    }
+  }
+}

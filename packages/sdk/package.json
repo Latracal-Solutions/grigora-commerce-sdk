@@ -1,0 +1,59 @@
+{
+  "name": "@grigora/commerce",
+  "version": "0.1.0",
+  "description": "Grigora Commerce SDK, batteries included: core + UI + Stripe and Razorpay adapters, plus the single-script CDN bundle (sdk.js).",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "./dist/sdk.js",
+    "./dist/sdk.min.js",
+    "./dist/cdn.js"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json",
+    "./sdk.js": "./dist/sdk.js",
+    "./sdk.min.js": "./dist/sdk.min.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Latracal-Solutions/grigora-commerce-sdk.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://github.com/Latracal-Solutions/grigora-commerce-sdk#readme",
+  "keywords": [
+    "grigora",
+    "commerce",
+    "ecommerce",
+    "cart",
+    "checkout",
+    "sdk"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@grigora/commerce-core": "^0.1.0",
+    "@grigora/commerce-ui": "^0.1.0",
+    "@grigora/commerce-adapter-stripe": "^0.1.0",
+    "@grigora/commerce-adapter-razorpay": "^0.1.0"
+  },
+  "unpkg": "./dist/sdk.min.js",
+  "jsdelivr": "./dist/sdk.min.js"
+}

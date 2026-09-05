@@ -1,0 +1,32 @@
+# Grigora Commerce SDK
+
+> Layered JavaScript SDK for selling from a Grigora store on any website: a headless core (cart, checkout, products, orders), drop-in UI as web components and data attributes (cart drawer, buy box, checkout, order status), payment adapters (Stripe Payment Element, Razorpay; PayPal and Paddle via hosted redirect), React and Vue wrappers, and a single-script CDN bundle. Amounts are integer minor units; every price is verified by the Grigora API; the SDK never sees secrets.
+
+## Agent instructions
+
+- To add commerce to a page: one script tag `<script src="https://cdn.grigora.co/commerce/v1/sdk.js" data-project="PROJECT_ID" async></script>`, then `<button data-grigora-add data-product-slug="SLUG">` for buttons, `<a data-cart-open>Cart (<span data-cart-count>0</span>)</a>` for the cart, `<g-buy-box product="SLUG"></g-buy-box>` on product pages.
+- Read products from `GET https://api.grigora.co/general/commerce/storefront/PROJECT_ID/catalog` (response wrapped in `Output`). Never invent products or prices.
+- npm: `@grigora/commerce` (everything), `@grigora/commerce-core` (headless), `@grigora/commerce-ui`, `@grigora/commerce-react`, `@grigora/commerce-vue`, `@grigora/commerce-adapter-stripe`, `@grigora/commerce-adapter-razorpay`.
+- Theme with CSS variables on `:root`: `--g-accent`, `--g-bg`, `--g-fg`, `--g-radius`, `--g-font`.
+
+## Docs
+
+- [AI integration skill](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/skill.md): the shortest correct instruction set
+- [Getting started](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/getting-started.md): script tag, npm, headless; script attributes
+- [Data attributes and custom elements](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/data-attributes.md): zero-JS surface reference
+- [JavaScript API](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/javascript-api.md): core reference (cart, products, checkout, orders, events)
+- [Checkout](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/checkout.md): hosted vs embedded vs free, return URLs, idempotency
+- [Theming](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/theming.md)
+- [Errors and events](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/errors-and-events.md)
+- [React](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/react.md)
+- [Vue](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/vue.md)
+- [Integrations](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/integrations.md): WordPress, Webflow, Framer, Bubble, Astro, Grigora sites
+- [Migration from cart.js](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/migration-from-cart-js.md)
+- [Security and CSP](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/security.md)
+- [Backend API](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/docs/backend-api.md): the Grigora commerce endpoints the SDK uses
+
+## Optional
+
+- [Vanilla example](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/examples/vanilla/index.html)
+- [React example](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/examples/react/App.tsx)
+- [Changelog](https://github.com/Latracal-Solutions/grigora-commerce-sdk/blob/main/CHANGELOG.md)

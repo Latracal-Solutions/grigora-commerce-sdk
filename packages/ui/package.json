@@ -1,0 +1,51 @@
+{
+  "name": "@grigora/commerce-ui",
+  "version": "0.1.0",
+  "description": "Drop-in storefront UI for Grigora Commerce: cart drawer, badge, buy buttons, buy box, checkout and order status as web components and data attributes.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/index.cjs"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Latracal-Solutions/grigora-commerce-sdk.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/Latracal-Solutions/grigora-commerce-sdk#readme",
+  "keywords": [
+    "grigora",
+    "commerce",
+    "ecommerce",
+    "cart",
+    "checkout",
+    "sdk"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@grigora/commerce-core": "^0.1.0"
+  }
+}

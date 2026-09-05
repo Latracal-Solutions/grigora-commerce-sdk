@@ -1,0 +1,89 @@
+name: Release
+
+# Tag a commit `vX.Y.Z` (after `node scripts/set-version.mjs X.Y.Z`) to
+# publish every package to npm with provenance and push the CDN bundle to
+# cdn.grigora.co under three paths:
+#   /commerce/vX/sdk.js        pinned major, short cache + stale-while-revalidate
+#   /commerce/X.Y.Z/sdk.js     exact version, immutable
+#   /commerce/latest/sdk.js    newest release
+#
+# Secrets: NPM_TOKEN (npm automation token), AWS_ACCESS_ID / AWS_SECRET_KEY
+# (write access to the cdn-grigora-co bucket), optional CDN_CLOUDFRONT_DISTRIBUTION_ID.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run size
+
+      - name: Check the tag matches package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "Tag v$TAG does not match package.json version $PKG. Run: node scripts/set-version.mjs $TAG" >&2
+            exit 1
+          fi
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CI: "true"
+        run: node scripts/publish-all.mjs
+
+      - name: Upload the CDN bundle
+        if: ${{ secrets.AWS_ACCESS_ID != '' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+          BUCKET: cdn-grigora-co
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          MAJOR="v${VERSION%%.*}"
+          SRC=packages/sdk/dist
+          put() { # $1 local, $2 key, $3 cache-control
+            aws s3 cp "$1" "s3://$BUCKET/commerce/$2" --content-type "application/javascript; charset=utf-8" --cache-control "$3"
+          }
+          for name in sdk.js sdk.min.js; do
+            put "$SRC/$name" "$VERSION/$name" "public, max-age=31536000, immutable"
+            put "$SRC/$name" "$MAJOR/$name" "public, max-age=300, stale-while-revalidate=86400"
+            put "$SRC/$name" "latest/$name" "public, max-age=300, stale-while-revalidate=86400"
+          done
+          for map in "$SRC"/*.map; do
+            [ -f "$map" ] || continue
+            base="$(basename "$map")"
+            aws s3 cp "$map" "s3://$BUCKET/commerce/$VERSION/$base" --content-type application/json --cache-control "public, max-age=31536000, immutable"
+            aws s3 cp "$map" "s3://$BUCKET/commerce/$MAJOR/$base" --content-type application/json --cache-control "public, max-age=300"
+            aws s3 cp "$map" "s3://$BUCKET/commerce/latest/$base" --content-type application/json --cache-control "public, max-age=300"
+          done
+          if [ -n "${{ secrets.CDN_CLOUDFRONT_DISTRIBUTION_ID }}" ]; then
+            aws cloudfront create-invalidation --distribution-id "${{ secrets.CDN_CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/commerce/$MAJOR/*" "/commerce/latest/*"
+          fi
+
+      - name: GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            packages/sdk/dist/sdk.js
+            packages/sdk/dist/sdk.min.js

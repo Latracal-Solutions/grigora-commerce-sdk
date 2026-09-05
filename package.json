@@ -1,0 +1,43 @@
+{
+  "name": "grigora-commerce-sdk",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Grigora Commerce SDK monorepo: headless core, drop-in UI, payment adapters, React and Vue wrappers, and the CDN bundle.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Latracal-Solutions/grigora-commerce-sdk.git"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "npm run build -w @grigora/commerce-core && npm run build -w @grigora/commerce-ui && npm run build -w @grigora/commerce-adapter-stripe && npm run build -w @grigora/commerce-adapter-razorpay && npm run build -w @grigora/commerce-react && npm run build -w @grigora/commerce-vue && npm run build -w @grigora/commerce",
+    "clean": "rm -rf packages/*/dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "size": "size-limit",
+    "check": "npm run typecheck && npm test && npm run build && npm run size",
+    "version:set": "node scripts/set-version.mjs",
+    "publish:all": "node scripts/publish-all.mjs"
+  },
+  "devDependencies": {
+    "@size-limit/file": "^11.1.6",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "jsdom": "^25.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "size-limit": "^11.1.6",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "vue": "^3.5.13"
+  }
+}

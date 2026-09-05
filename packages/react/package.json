@@ -1,0 +1,53 @@
+{
+  "name": "@grigora/commerce-react",
+  "version": "0.1.0",
+  "description": "React provider, hooks and components for Grigora Commerce.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Latracal-Solutions/grigora-commerce-sdk.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://github.com/Latracal-Solutions/grigora-commerce-sdk#readme",
+  "keywords": [
+    "grigora",
+    "commerce",
+    "ecommerce",
+    "cart",
+    "checkout",
+    "sdk"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@grigora/commerce-core": "^0.1.0",
+    "@grigora/commerce-ui": "^0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=17",
+    "react-dom": ">=17"
+  }
+}
