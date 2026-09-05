@@ -61,8 +61,12 @@ export function trimSlashes(value: string): string {
 export function defaultApiBase(): string {
   if (isBrowser()) {
     try {
-      const host = window.location.hostname;
-      if (host === "localhost" || host === "127.0.0.1") return "http://localhost:2706";
+      const host = window.location.hostname.toLowerCase();
+      // Grigora's local preview serves sites at <slug>.localhost, and browsers
+      // resolve every *.localhost name to the loopback address.
+      if (host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host.endsWith(".localhost")) {
+        return "http://localhost:2706";
+      }
     } catch {
       // ignore
     }

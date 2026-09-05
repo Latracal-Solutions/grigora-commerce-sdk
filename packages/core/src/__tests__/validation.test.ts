@@ -90,3 +90,18 @@ describe("default instance", () => {
     expect(() => init({ projectId: "" })).toThrow(/projectId/);
   });
 });
+
+describe("defaultApiBase", () => {
+  it("targets the local API from localhost and from a *.localhost preview host", async () => {
+    const { defaultApiBase } = await import("../util");
+    const original = window.location.href;
+    for (const url of ["http://localhost:3000/", "http://127.0.0.1:8080/x", "http://brew-and-bean.localhost:2706/shop/"]) {
+      window.history.replaceState({}, "", url.replace(/^http:\/\/[^/]+/, ""));
+      Object.defineProperty(window, "location", { value: new URL(url), configurable: true, writable: true });
+      expect(defaultApiBase()).toBe("http://localhost:2706");
+    }
+    Object.defineProperty(window, "location", { value: new URL("https://shop.example/"), configurable: true, writable: true });
+    expect(defaultApiBase()).toBe("https://api.grigora.co");
+    Object.defineProperty(window, "location", { value: new URL(original), configurable: true, writable: true });
+  });
+});

@@ -35,7 +35,7 @@ Find your project id in the Grigora dashboard URL, or in `<html data-g-project="
 | `data-accent`, `data-font`, `data-radius` | store accent / inherit / `10px` | Quick theme overrides. |
 | `data-continue-url` | `/` | "Continue shopping" destination. |
 | `data-currency`, `data-locale` | store currency / `navigator.language` | Formatting before the store settings load. |
-| `data-api-base` | `https://api.grigora.co` | API origin (`http://localhost:2706` on localhost). |
+| `data-api-base` | `https://api.grigora.co` | API origin (`http://localhost:2706` when the page is on `localhost` or any `*.localhost` host). |
 | `data-ui` | `true` | `false` for a headless install (no drawer, no bindings, no styles). |
 | `data-autobind`, `data-styles`, `data-handle-return` | `true` | Turn individual UI features off. |
 | `data-debug` | `false` | Console logging. |
