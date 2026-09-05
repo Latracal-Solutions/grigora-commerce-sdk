@@ -70,7 +70,7 @@ export const EN = {
   changedRecheck: "Your order changed. Review the new total before paying.",
   paymentCancelled: "Payment was cancelled.",
   paymentFailed: "Payment failed. Please try again.",
-  storeUnavailable: "This store is not taking payments right now.",
+  storeUnavailable: "Unavailable",
   checkingOrder: "Checking your order…",
   checkingOrderDetail: "We are verifying the payment status.",
   orderConfirmed: "Thank you — your order is confirmed.",
