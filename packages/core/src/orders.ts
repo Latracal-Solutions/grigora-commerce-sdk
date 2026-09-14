@@ -74,6 +74,8 @@ export function mapOrder(raw: Raw): Order {
     invoiceId: clean(raw.invoice_id, 80),
     invoiceNumber: clean(raw.invoice_number, 80),
     invoiceUrl: clean(raw.invoice_url ?? raw.hosted_invoice_url, 1000),
+    invoiceDeliveryMethod: raw.invoice_delivery_method === "email" ? "email" : "link",
+    invoiceEmailStatus: raw.invoice_email_status === "sent" ? "sent" : raw.invoice_email_status === "failed" ? "failed" : "pending",
     invoicePdfUrl: clean(raw.invoice_pdf_url, 1000),
     invoiceIssuedAt: nullableInt(raw.invoice_issued_at),
     createdAt: nullableInt(raw.created_at),

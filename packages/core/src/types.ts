@@ -478,6 +478,9 @@ export interface Order {
   invoiceId: string;
   invoiceNumber: string;
   invoiceUrl: string;
+  /** AI websites receive invoices by email rather than a fixed storefront route. */
+  invoiceDeliveryMethod?: "email" | "link";
+  invoiceEmailStatus?: "sent" | "pending" | "failed";
   invoicePdfUrl: string;
   invoiceIssuedAt: number | null;
   createdAt: number | null;

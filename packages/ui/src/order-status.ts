@@ -112,9 +112,13 @@ export class GOrderStatus extends HTMLElement {
     const commerce = this.commerceOrThrow();
     const ctx = this.ctx || requireContext();
     this.setAttribute("data-state", this.state);
+    const invoiceByEmail = this.order?.invoiceDeliveryMethod === "email";
+    const paidDetail = invoiceByEmail
+      ? this.t(this.order?.invoiceEmailStatus === "sent" ? "invoiceEmailSent" : this.order?.invoiceEmailStatus === "failed" ? "invoiceEmailDelayed" : "invoiceEmailPending")
+      : this.t("orderConfirmedDetail");
     const titles: Record<State, [string, string, string]> = {
       checking: [this.t("checkingOrder"), this.t("checkingOrderDetail"), "shield"],
-      paid: [this.order && this.order.totalAmount === 0 ? this.t("freeOrderConfirmed") : this.t("orderConfirmed"), this.t("orderConfirmedDetail"), "check"],
+      paid: [this.order && this.order.totalAmount === 0 ? this.t("freeOrderConfirmed") : this.t("orderConfirmed"), paidDetail, "check"],
       pending: [this.t("orderPending"), this.t("orderPendingDetail"), "package"],
       failed: [this.t("orderFailed"), this.t("orderFailedDetail"), "alert"],
       error: [this.t("orderError"), this.errorText || this.t("orderErrorDetail"), "alert"],
@@ -140,7 +144,7 @@ export class GOrderStatus extends HTMLElement {
     if (this.state === "pending" || this.state === "error") {
       actions.push(h("button", { type: "button", class: "g-btn g-btn-primary", disabled: this.inFlight, onClick: () => void this.verify() }, this.t("checkAgain")));
     }
-    if (this.order?.invoiceUrl && this.state === "paid") {
+    if (!invoiceByEmail && this.order?.invoiceUrl && this.state === "paid") {
       actions.push(h("a", { class: "g-btn g-btn-secondary", href: safeHref(this.order.invoiceUrl), target: "_blank", rel: "noopener" }, icon("external", 14), this.t("viewInvoice")));
     }
     actions.push(h("a", { class: `g-btn ${this.state === "paid" ? "g-btn-primary" : "g-btn-secondary"}`, href: safeHref(this.getAttribute("continue-url") || ctx.options.continueShoppingUrl) }, this.t("continueShopping")));

@@ -414,6 +414,27 @@ describe("checkout", () => {
 });
 
 describe("order status", () => {
+  it.each([
+    ["sent", "Your invoice has been sent to your email."],
+    ["pending", "You'll receive your invoice by email."],
+    ["failed", "Your invoice email is delayed."],
+  ])("shows %s email delivery for AI orders without a storefront invoice link", async (emailStatus, message) => {
+    setup(api({ "/orders/lookup": () => ({ body: { order: {
+      order_id: "ord_ai", status: "paid", payment_status: "paid",
+      invoice_url: "https://store.test/invoice/old-route",
+      invoice_delivery_method: "email", invoice_email_status: emailStatus,
+    } } }) }));
+    const status = document.createElement("g-order-status") as GOrderStatus;
+    status.setAttribute("order-id", "ord_ai");
+    status.setAttribute("lookup-token", "tok_".padEnd(24, "p"));
+    document.body.appendChild(status);
+    await settle(10);
+    expect(status.getAttribute("data-state")).toBe("paid");
+    expect(status.textContent).toContain(message);
+    expect(status.textContent).not.toContain("View invoice");
+    expect(status.querySelector('a[href*="/invoice/"]')).toBeNull();
+  });
+
   it("verifies a paid order, clears the cart and shows the summary", async () => {
     setup();
     await commerce.cart.add({ productId: "a", unitAmount: 500 });
