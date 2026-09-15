@@ -232,7 +232,7 @@ describe("data attributes", () => {
 });
 
 describe("buy box", () => {
-  it("renders options, blocks sold-out variants and adds the chosen one", async () => {
+  it("preselects the first variant and adds it without an option click", async () => {
     setup();
     const box = document.createElement("g-buy-box") as GBuyBox;
     box.setAttribute("product", "tee");
@@ -240,21 +240,80 @@ describe("buy box", () => {
     document.body.appendChild(box);
     await settle();
     expect(box.querySelector(".g-price-now")?.textContent).toBe("$15.00");
-    expect(box.querySelector(".g-price-was")?.textContent).toBe("$20.00");
+    // The selected variant has no compare-at price, even though the product does.
+    expect(box.querySelector(".g-price-was")).toBeNull();
     const chips = Array.from(box.querySelectorAll<HTMLButtonElement>(".g-chip"));
     expect(chips.map((c) => c.textContent)).toEqual(["S", "M"]);
     expect(chips[1].hasAttribute("data-unavailable")).toBe(true);
+    expect(chips[0].getAttribute("aria-pressed")).toBe("true");
+    expect(chips[1].getAttribute("aria-pressed")).toBe("false");
+    expect(box.selectedVariant()?.id).toBe("s");
     const add = box.querySelector<HTMLButtonElement>("[data-buybox-add]")!;
-    expect(add.disabled).toBe(true);
-    chips[0].click();
-    await settle();
+    expect(add.disabled).toBe(false);
     expect(box.querySelector(".g-stock")?.textContent).toBe("Only 3 left");
-    const addNow = box.querySelector<HTMLButtonElement>("[data-buybox-add]")!;
-    expect(addNow.disabled).toBe(false);
-    addNow.click();
+    add.click();
     await settle();
     expect(commerce.cart.findLine("tee", "s")?.quantity).toBe(1);
     expect(box.textContent).toContain("1 in cart");
+  });
+
+  it.each(["", "unknown-variant"])("falls back to the first variant for variant=%j", async (variant) => {
+    setup();
+    const box = document.createElement("g-buy-box") as GBuyBox;
+    box.setAttribute("product", "tee");
+    box.setAttribute("variant", variant);
+    document.body.appendChild(box);
+    await settle();
+    expect(box.selectedVariant()?.id).toBe("s");
+    expect(box.querySelector<HTMLButtonElement>("[data-buybox-add]")?.disabled).toBe(false);
+    expect(box.querySelector<HTMLButtonElement>("[data-buybox-buy]")?.disabled).toBe(false);
+  });
+
+  it("preserves an explicit variant and blocks purchases when it is sold out", async () => {
+    setup();
+    const box = document.createElement("g-buy-box") as GBuyBox;
+    box.setAttribute("product", "tee");
+    box.setAttribute("variant", "m");
+    document.body.appendChild(box);
+    await settle();
+    expect(box.selectedVariant()?.id).toBe("m");
+    expect(box.querySelector(".g-price-now")?.textContent).toBe("$17.00");
+    expect(box.querySelector(".g-stock")?.textContent).toBe("Sold out");
+    expect(box.querySelector<HTMLButtonElement>("[data-buybox-add]")?.disabled).toBe(true);
+    expect(box.querySelector<HTMLButtonElement>("[data-buybox-buy]")?.disabled).toBe(true);
+    box.querySelector<HTMLButtonElement>(".g-chip")!.click();
+    expect(box.selectedVariant()?.id).toBe("s");
+    expect(box.querySelector<HTMLButtonElement>("[data-buybox-add]")?.disabled).toBe(false);
+  });
+
+  it("selects all options of the first variant and keeps a sold-out first variant disabled", async () => {
+    const product = {
+      ...TEE,
+      options: [{ name: "Size", values: ["M", "S"] }, { name: "Color", values: ["Blue", "Red"] }],
+      variants: [
+        { ...TEE.variants[1], option_values: { Size: "M", Color: "Blue" } },
+        { ...TEE.variants[0], option_values: { Size: "S", Color: "Red" } },
+      ],
+    };
+    setup(api({ "/storefront/p1/products/tee": () => ({ body: { product } }) }));
+    const box = document.createElement("g-buy-box") as GBuyBox;
+    box.setAttribute("product", "tee");
+    document.body.appendChild(box);
+    await settle();
+    expect(box.selectedVariant()?.id).toBe("m");
+    expect(Array.from(box.querySelectorAll('.g-chip[aria-pressed="true"]')).map((chip) => chip.textContent)).toEqual(["M", "Blue"]);
+    expect(box.querySelector<HTMLButtonElement>("[data-buybox-add]")?.disabled).toBe(true);
+    expect(box.querySelector<HTMLButtonElement>("[data-buybox-buy]")?.disabled).toBe(true);
+  });
+
+  it("keeps products with no available variants disabled", async () => {
+    setup(api({ "/storefront/p1/products/tee": () => ({ body: { product: { ...TEE, variants: [] } } }) }));
+    const box = document.createElement("g-buy-box") as GBuyBox;
+    box.setAttribute("product", "tee");
+    document.body.appendChild(box);
+    await settle();
+    expect(box.selectedVariant()).toBeNull();
+    expect(box.querySelector<HTMLButtonElement>("[data-buybox-add]")?.disabled).toBe(true);
   });
 
   it("buy now adds and opens the checkout dialog", async () => {

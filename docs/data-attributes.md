@@ -75,6 +75,8 @@ Live count badge (`show-zero` to always show) and a ready-made launcher button.
 
 Price (with compare-at strike-through), option chips with sold-out values marked, stock note, quantity stepper, Add to cart and Buy now. Pay-what-you-want products show an amount field and go straight to checkout after asking for an email. Fires `grigora:added` (`detail: { productId, variantId, quantity }`).
 
+On load, the first variant in catalog order is selected automatically. A valid `variant="variant-id"` attribute overrides this default; a missing, empty, or unknown variant id falls back to the first variant. All option values for that variant are selected together. If the selected variant is sold out, purchase buttons remain disabled until the shopper chooses an in-stock variant.
+
 ### `<g-add-to-cart product="slug" [variant] [quantity] [label]>`
 
 A single styled button.

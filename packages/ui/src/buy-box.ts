@@ -83,13 +83,10 @@ export class GBuyBox extends HTMLElement {
     try {
       const product = await this.commerceOrThrow().products.get(key);
       this.product = product;
-      this.selected = {};
+      // Default to the first variant; a valid website-supplied variant wins.
+      this.selected = product.hasVariants ? { ...product.variants[0]?.optionValues } : {};
       this.applyVariantAttribute();
       if (product.pricingType === "pay_what_you_want") this.pwywAmount = product.priceAmount;
-      // A single variant needs no picker; select it so Add works at once.
-      if (product.hasVariants && product.variants.length === 1) {
-        this.selected = { ...product.variants[0].optionValues };
-      }
     } catch (error) {
       this.message = { text: (error as Error).message || this.t("error"), type: "error" };
     }
