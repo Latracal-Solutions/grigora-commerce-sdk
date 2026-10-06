@@ -7,7 +7,7 @@ Before any third-party site can complete a purchase, set **Storefront base URL**
 ## Plain HTML / static site
 
 ```html
-<script src="https://cdn.grigora.co/commerce/v1/sdk.js" data-project="PROJECT_ID" async></script>
+<script src="https://cdn.grigora.app/commerce/v1/sdk.js" data-project="PROJECT_ID" async></script>
 <button data-grigora-add data-product-slug="blue-mug">Add to cart</button>
 <a href="#" data-cart-open>Cart (<span data-cart-count>0</span>)</a>
 ```
@@ -18,7 +18,7 @@ Before any third-party site can complete a purchase, set **Storefront base URL**
 
 ```php
 add_action('wp_enqueue_scripts', function () {
-  wp_enqueue_script('grigora-commerce', 'https://cdn.grigora.co/commerce/v1/sdk.js', [], null, true);
+  wp_enqueue_script('grigora-commerce', 'https://cdn.grigora.app/commerce/v1/sdk.js', [], null, true);
 });
 add_filter('script_loader_tag', function ($tag, $handle) {
   if ($handle !== 'grigora-commerce') return $tag;

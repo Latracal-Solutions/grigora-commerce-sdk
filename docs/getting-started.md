@@ -8,7 +8,7 @@ There are three ways in. Pick the one that matches your stack.
 
 ```html
 <script
-  src="https://cdn.grigora.co/commerce/v1/sdk.js"
+  src="https://cdn.grigora.app/commerce/v1/sdk.js"
   data-project="YOUR_PROJECT_ID"
   async></script>
 

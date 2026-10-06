@@ -5,7 +5,7 @@ The whole Grigora Commerce SDK in one package: headless core, drop-in UI, Stripe
 ## Script tag (no build)
 
 ```html
-<script src="https://cdn.grigora.co/commerce/v1/sdk.js" data-project="YOUR_PROJECT_ID" async></script>
+<script src="https://cdn.grigora.app/commerce/v1/sdk.js" data-project="YOUR_PROJECT_ID" async></script>
 <button data-grigora-add data-product-slug="blue-mug">Add to cart</button>
 <a href="#" data-cart-open>Cart (<span data-cart-count>0</span>)</a>
 ```

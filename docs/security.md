@@ -17,7 +17,7 @@ Every checkout POST carries `Idempotency-Key` (a UUID per distinct checkout atte
 If your site sends a CSP, allow:
 
 ```
-script-src  https://cdn.grigora.co https://js.stripe.com https://checkout.razorpay.com https://*.paddle.com
+script-src  https://cdn.grigora.app https://js.stripe.com https://checkout.razorpay.com https://*.paddle.com
 connect-src https://api.grigora.co https://api.stripe.com https://r.stripe.com https://checkout.razorpay.com https://lumberjack.razorpay.com https://*.paddle.com https://*.paddle.io
 frame-src   https://js.stripe.com https://hooks.stripe.com https://checkout.razorpay.com https://api.razorpay.com https://*.paddle.com https://*.paddle.io
 img-src     https: data:

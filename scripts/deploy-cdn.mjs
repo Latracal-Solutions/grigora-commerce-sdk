@@ -9,7 +9,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FILES = ["sdk.js", "sdk.min.js", "sdk.js.map", "sdk.min.js.map"];
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
 
-export async function prepareDeployment({ root = ROOT, revision, channel = "v1", publicBase = "https://cdn.grigora.co" }) {
+export async function prepareDeployment({ root = ROOT, revision, channel = "v1", publicBase = "https://cdn.grigora.app" }) {
   if (!/^[a-f0-9]{40}$/.test(revision || "")) throw new Error("SDK_REVISION must be a full Git commit SHA.");
   if (!/^v[1-9][0-9]*$/.test(channel)) throw new Error("SDK_CHANNEL must be a compatibility channel such as v1.");
   const url = new URL(publicBase);
@@ -51,7 +51,7 @@ export async function publishDeployment(plan, { upload, verify, writeManifest })
 async function main() {
   const args = process.argv.slice(2);
   if (args.some(arg => !["--publish", "--dry-run"].includes(arg)) || (args.includes("--publish") && args.includes("--dry-run"))) throw new Error("Usage: node scripts/deploy-cdn.mjs [--dry-run | --publish]");
-  const plan = await prepareDeployment({ revision: process.env.SDK_REVISION || execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(), channel: process.env.SDK_CHANNEL || "v1", publicBase: process.env.CDN_PUBLIC_BASE || "https://cdn.grigora.co" });
+  const plan = await prepareDeployment({ revision: process.env.SDK_REVISION || execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(), channel: process.env.SDK_CHANNEL || "v1", publicBase: process.env.CDN_PUBLIC_BASE || "https://cdn.grigora.app" });
   const manifest = { revision: plan.revision, version: plan.version, channel: plan.channel, assets: plan.assets.map(({ name, sha256, bytes }) => ({ name, sha256, bytes })) };
   const manifestFile = path.join(ROOT, "packages/sdk/dist/release.json");
   await fs.writeFile(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);

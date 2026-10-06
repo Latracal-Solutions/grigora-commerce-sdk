@@ -1,6 +1,6 @@
 # Commerce SDK CDN delivery
 
-The browser SDK is served directly from **https://cdn.grigora.co/commerce/v1/sdk.js** (or `sdk.min.js`). Store data and checkout requests still use `data-api-base`; only JavaScript delivery moves off the API.
+The browser SDK is served directly from **https://cdn.grigora.app/commerce/v1/sdk.js** (or `sdk.min.js`). Store data and checkout requests still use `data-api-base`; only JavaScript delivery moves off the API.
 
 ## Configure once
 
@@ -12,7 +12,7 @@ In the SDK repository, create a GitHub environment named `commerce-sdk-cdn`. Add
 | `R2_ACCESS_KEY_ID` | R2 access key with object read/write access to the CDN bucket |
 | `R2_SECRET_ACCESS_KEY` | Matching R2 secret access key |
 
-Defaults are bucket `cdn-grigora-co` and public origin `https://cdn.grigora.co`. Override with repository variables `R2_BUCKET` and `CDN_PUBLIC_BASE` if needed; update the platform's SDK URL too if changing the public origin.
+Defaults are bucket `cdn-grigora-co` and public origin `https://cdn.grigora.app`. Override with repository variables `R2_BUCKET` and `CDN_PUBLIC_BASE` if needed; update the platform's SDK URL too if changing the public origin.
 
 Connect the public CDN domain to this R2 bucket. Honor object `Cache-Control` for `/commerce/*` (remove any edge rule that forces a longer TTL on `/commerce/v1/*`). Channel files cache for 60 seconds; revision/content-addressed builds cache for a year. Allow public GET/HEAD; optionally configure CORS for source-map tooling. The workflow verifies actual public responses and fails if the domain, caching, or access rules prevent the expected bytes from being served.
 
