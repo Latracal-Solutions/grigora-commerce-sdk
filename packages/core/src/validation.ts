@@ -99,6 +99,18 @@ export function normalizeAddress(input: Partial<Address> | null | undefined): Ad
   };
 }
 
+/** Reuse checkout contact details when a separate destination only supplies address fields. */
+export function normalizeShippingAddress(shipping: Partial<Address> | null | undefined, billing: Partial<Address> | null | undefined): Address {
+  const destination = normalizeAddress(shipping);
+  const contact = normalizeAddress(billing);
+  return {
+    ...destination,
+    name: destination.name || contact.name,
+    email: destination.email || contact.email,
+    phone: destination.phone || contact.phone,
+  };
+}
+
 /** The fields the API would reject, in the order the API reports them. Empty when valid. */
 export function addressErrors(input: Partial<Address> | null | undefined, options: AddressValidationOptions = {}): AddressField[] {
   const address = normalizeAddress(input);

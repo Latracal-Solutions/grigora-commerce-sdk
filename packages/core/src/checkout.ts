@@ -22,7 +22,7 @@ import type {
   StoreSettings,
 } from "./types";
 import { absoluteUrl, clean, currentPageUrl, currentUrl, isBrowser, stableStringify, toInt, uuid, type Logger } from "./util";
-import { addressErrorMessage, addressErrors, normalizeAddress, toApiAddress } from "./validation";
+import { addressErrorMessage, addressErrors, normalizeAddress, normalizeShippingAddress, toApiAddress } from "./validation";
 
 type Raw = Record<string, unknown>;
 
@@ -88,7 +88,7 @@ export class CheckoutClient implements CheckoutAPI {
 
   quote(input: Partial<CheckoutInput>) {
     const billing = input.billingAddress ? normalizeAddress(input.billingAddress) : null;
-    const shipping = input.sameAsBilling === false && input.shippingAddress ? normalizeAddress(input.shippingAddress) : billing;
+    const shipping = input.sameAsBilling === false ? normalizeShippingAddress(input.shippingAddress, billing) : billing;
     return this.deps.cart.validate({
       billingAddress: billing,
       shippingAddress: shipping,
@@ -122,7 +122,7 @@ export class CheckoutClient implements CheckoutAPI {
     if (cart.isEmpty()) throw new GrigoraError("Your cart is empty.", { code: "cart_empty" });
 
     const billing = normalizeAddress(input.billingAddress);
-    const shipping = input.sameAsBilling === false && input.shippingAddress ? normalizeAddress(input.shippingAddress) : billing;
+    const shipping = input.sameAsBilling === false ? normalizeShippingAddress(input.shippingAddress, billing) : billing;
     const billingProblems = addressErrors(billing);
     if (billingProblems.length) {
       throw new GrigoraError(addressErrorMessage("Billing address", billingProblems), {

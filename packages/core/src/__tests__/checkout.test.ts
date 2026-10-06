@@ -151,6 +151,47 @@ describe("checkout", () => {
     expect(calls.filter((c) => c.path === "/checkout/session")).toHaveLength(0);
   });
 
+  it.each(["startHosted", "startEmbedded"] as const)("%s inherits missing shipping contact fields without overwriting the destination", async (method) => {
+    const storage = new MemoryStorageAdapter();
+    seeded(storage);
+    const { commerce, calls } = makeCommerce(api({
+      "/cart/validate": () => ({ body: validateResponse([serverLine("a", 1000, 2, { requires_shipping: true })], { requires_shipping: true }) }),
+    }), { storage });
+    await commerce.cart.validate();
+    expect(commerce.cart.get().requiresShipping).toBe(true);
+    const shipping = { line1: "20 Shipping Road", city: "New York", state: "NY", postalCode: "10001", country: "US", email: "", name: " ", phone: "" };
+    await commerce.checkout[method]({ billingAddress: BILLING, shippingAddress: shipping, sameAsBilling: false });
+    const session = calls.find(c => c.path === (method === "startHosted" ? "/checkout/session" : "/checkout/embedded"))!;
+    expect(session.body.shipping_address).toMatchObject({ name: BILLING.name, email: BILLING.email, phone: BILLING.phone, line1: shipping.line1, postal_code: shipping.postalCode });
+    expect(session.body.billing_address).toMatchObject({ line1: BILLING.line1 });
+    expect(shipping.email).toBe("");
+  });
+
+  it("keeps explicitly supplied recipient details for headless checkout and quotes", async () => {
+    const storage = new MemoryStorageAdapter();
+    seeded(storage);
+    const { commerce, calls } = makeCommerce(api(), { storage });
+    const shipping = { ...BILLING, name: "Grace Hopper", email: "grace@example.com", phone: "2125552671", line1: "20 Shipping Road" };
+    await commerce.checkout.quote({ billingAddress: BILLING, shippingAddress: shipping, sameAsBilling: false });
+    await commerce.checkout.startHosted({ billingAddress: BILLING, shippingAddress: shipping, sameAsBilling: false });
+    for (const path of ["/cart/validate", "/checkout/session"]) {
+      expect(calls.find(c => c.path === path)!.body.shipping_address).toMatchObject({ name: shipping.name, email: shipping.email, phone: shipping.phone, line1: shipping.line1 });
+    }
+  });
+
+  it("does not borrow missing destination fields from billing", async () => {
+    const storage = new MemoryStorageAdapter();
+    seeded(storage);
+    const { commerce, calls } = makeCommerce(api({
+      "/cart/validate": () => ({ body: validateResponse([serverLine("a", 1000, 2, { requires_shipping: true })], { requires_shipping: true }) }),
+    }), { storage });
+    await commerce.cart.validate();
+    for (const shipping of [undefined, {}, { country: "US", postalCode: "10001" }]) {
+      await expect(commerce.checkout.startHosted({ billingAddress: BILLING, shippingAddress: shipping, sameAsBilling: false })).rejects.toMatchObject({ code: "invalid_address", details: { scope: "shipping", field: "line1" } });
+    }
+    expect(calls.filter(c => c.path === "/checkout/session")).toHaveLength(0);
+  });
+
   it("refuses an empty cart", async () => {
     const { commerce } = makeCommerce(api());
     await expect(commerce.checkout.start({ billingAddress: BILLING })).rejects.toMatchObject({ code: "cart_empty" });

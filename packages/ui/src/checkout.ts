@@ -349,7 +349,14 @@ export class GCheckout extends HTMLElement {
   }
 
   private effectiveShipping(): Partial<Address> {
-    return this.sameAsBilling ? this.billing : this.shipping;
+    // The shipping section only edits the destination. Contact fields are
+    // collected once, so always use their current values (also after restore).
+    return this.sameAsBilling ? this.billing : {
+      ...this.shipping,
+      name: this.billing.name,
+      email: this.billing.email,
+      phone: this.billing.phone,
+    };
   }
 
   private syncShippingFields(): void {
@@ -366,7 +373,7 @@ export class GCheckout extends HTMLElement {
   private markField(scope: Scope, key: AddressField): void {
     const control = this.inputs.get(`${scope}.${key}`);
     if (!control) return;
-    const address = scope === "billing" ? this.billing : this.shipping;
+    const address = scope === "billing" ? this.billing : this.effectiveShipping();
     const errors = addressErrors(address, { requirePhone: true });
     const invalid = errors.includes(key);
     control.setAttribute("aria-invalid", invalid ? "true" : "false");
@@ -383,7 +390,7 @@ export class GCheckout extends HTMLElement {
     const scopes: Scope[] = this.cart.requiresShipping && !this.sameAsBilling ? ["billing", "shipping"] : ["billing"];
     let first: { scope: Scope; key: AddressField } | null = null;
     for (const scope of scopes) {
-      const errors = addressErrors(scope === "billing" ? this.billing : this.shipping);
+      const errors = addressErrors(scope === "billing" ? this.billing : this.effectiveShipping());
       for (const spec of [...CONTACT_FIELDS, ...ADDRESS_FIELDS]) {
         this.markField(scope, spec.key);
         if (!first && errors.includes(spec.key)) first = { scope, key: spec.key };

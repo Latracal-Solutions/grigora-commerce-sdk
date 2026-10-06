@@ -374,6 +374,58 @@ describe("checkout", () => {
     expect(navigate).toHaveBeenCalledWith("https://checkout.stripe.com/s/1");
   });
 
+  it("uses contact details for a separate shipping address, including after toggling and reloading", async () => {
+    setup(api({ "/storefront/p1/settings": () => ({ body: { store: { ...STORE, checkout: { ...STORE.checkout, mode: "hosted", embedded_supported: false } } } }) }));
+    await commerce.cart.add({ productId: "b", unitAmount: 700 });
+    let checkout = document.createElement("g-checkout") as GCheckout;
+    document.body.appendChild(checkout);
+    await settle(10);
+    fill(checkout, "billing", BILLING);
+    const same = checkout.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    same.click();
+    expect(same.checked).toBe(false);
+    const shipping = { line1: "20 Shipping Road", line2: "Suite 2", city: "New York", state: "NY", postalCode: "10001", country: "US" };
+    fill(checkout, "shipping", shipping);
+    same.click();
+    same.click();
+    await settle(30);
+    // Restore the independently entered address, and read contact edits fresh.
+    checkout.remove();
+    checkout = document.createElement("g-checkout") as GCheckout;
+    document.body.appendChild(checkout);
+    await settle(10);
+    expect(checkout.querySelector<HTMLInputElement>('input[type="checkbox"]')!.checked).toBe(false);
+    fill(checkout, "billing", { email: "updated@example.com", name: "Updated Shopper", phone: "2125552671" });
+    await settle(30);
+    checkout.querySelector<HTMLButtonElement>("[data-pay]")!.click();
+    await settle(10);
+    const session = calls.find(c => c.path === "/checkout/session");
+    expect(session, checkout.querySelector(".g-alert")?.textContent || "").toBeDefined();
+    const contact = { email: "updated@example.com", name: "Updated Shopper", phone: "2125552671" };
+    expect(session!.body.shipping_address).toMatchObject({ ...contact, line1: shipping.line1, line2: shipping.line2, city: shipping.city, postal_code: shipping.postalCode });
+    expect(session!.body.billing_address).toMatchObject({ ...contact, line1: BILLING.line1, postal_code: BILLING.postalCode });
+    const quote = calls.filter(c => c.path === "/cart/validate").pop()!;
+    expect(quote.body.shipping_address).toMatchObject({ ...contact, line1: shipping.line1 });
+    expect(navigate).toHaveBeenCalledWith("https://checkout.stripe.com/s/1");
+  });
+
+  it("reports an invalid separate shipping field and focuses a field the shopper can edit", async () => {
+    setup();
+    await commerce.cart.add({ productId: "b", unitAmount: 700 });
+    const checkout = document.createElement("g-checkout") as GCheckout;
+    document.body.appendChild(checkout);
+    await settle(10);
+    fill(checkout, "billing", BILLING);
+    checkout.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click();
+    fill(checkout, "shipping", { line1: "20 Shipping Road", city: "New York", state: "NY", country: "US", postalCode: "1" });
+    await settle(30);
+    checkout.querySelector<HTMLButtonElement>("[data-pay]")!.click();
+    await settle();
+    expect(checkout.querySelector(".g-alert")?.textContent).toContain("Shipping address: Enter a valid postal code");
+    expect(document.activeElement).toBe(checkout.querySelector('[name="shipping.postalCode"]'));
+    expect(calls.filter(c => c.path.startsWith("/checkout/"))).toHaveLength(0);
+  });
+
   it("mounts an embedded adapter, pays, confirms and lands on the success page", async () => {
     setup();
     const mounted = vi.fn(async (ctx: PaymentAdapterContext) => {
