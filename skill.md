@@ -7,7 +7,7 @@ You are building or editing a website that sells products from a Grigora store. 
 Put this in `<head>` (once per page / layout):
 
 ```html
-<script src="https://cdn.grigora.co/commerce/v1/sdk.js" data-project="PROJECT_ID" async></script>
+<script src="https://prod.grigora-cdn.com/commerce/v1/sdk.js" data-project="PROJECT_ID" async></script>
 ```
 
 - `PROJECT_ID` is the Grigora project id. On a Grigora-published site it can be omitted (the SDK reads `<html data-g-project>`).

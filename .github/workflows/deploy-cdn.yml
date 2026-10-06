@@ -44,7 +44,7 @@ jobs:
         run: node scripts/deploy-cdn.mjs --dry-run
         env:
           SDK_REVISION: ${{ steps.revision.outputs.sha }}
-          CDN_PUBLIC_BASE: ${{ vars.CDN_PUBLIC_BASE || 'https://cdn.grigora.app' }}
+          CDN_PUBLIC_BASE: ${{ vars.CDN_PUBLIC_BASE || 'https://prod.grigora-cdn.com' }}
       - uses: actions/upload-artifact@v4
         with:
           name: commerce-sdk-cdn-${{ steps.revision.outputs.sha }}
@@ -79,7 +79,7 @@ jobs:
         run: node scripts/deploy-cdn.mjs --publish
         env:
           SDK_REVISION: ${{ needs.build.outputs.revision }}
-          CDN_PUBLIC_BASE: ${{ vars.CDN_PUBLIC_BASE || 'https://cdn.grigora.app' }}
+          CDN_PUBLIC_BASE: ${{ vars.CDN_PUBLIC_BASE || 'https://prod.grigora-cdn.com' }}
           R2_BUCKET: ${{ vars.R2_BUCKET || 'cdn-grigora-co' }}
           R2_S3_ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -87,6 +87,6 @@ jobs:
       - name: Release summary
         env:
           SDK_REVISION: ${{ needs.build.outputs.revision }}
-          CDN_PUBLIC_BASE: ${{ vars.CDN_PUBLIC_BASE || 'https://cdn.grigora.app' }}
+          CDN_PUBLIC_BASE: ${{ vars.CDN_PUBLIC_BASE || 'https://prod.grigora-cdn.com' }}
         run: |
           printf 'Published and verified commit `%s`.\n\nSDK: %s/commerce/v1/sdk.js\n' "$SDK_REVISION" "$CDN_PUBLIC_BASE" >> "$GITHUB_STEP_SUMMARY"

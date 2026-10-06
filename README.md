@@ -5,7 +5,7 @@ Sell from a [Grigora](https://grigora.co) store on any website: a Grigora-built 
 One script tag gives you a cart drawer, buy buttons, a complete checkout and an order status view. One npm package gives you the same as typed, tree-shakeable modules. A headless core underneath lets you build any storefront you like. Prices, stock, shipping, tax and payments are always decided and verified by the Grigora API; the SDK never holds a secret.
 
 ```html
-<script src="https://cdn.grigora.app/commerce/v1/sdk.js" data-project="YOUR_PROJECT_ID" async></script>
+<script src="https://prod.grigora-cdn.com/commerce/v1/sdk.js" data-project="YOUR_PROJECT_ID" async></script>
 
 <button data-grigora-add data-product-slug="blue-mug">Add to cart</button>
 <a href="#" data-cart-open>Cart (<span data-cart-count>0</span>)</a>

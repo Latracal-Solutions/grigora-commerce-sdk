@@ -23,7 +23,7 @@ Grigora-published sites ship a small `cart.js` plus a buy widget injected into p
 ## Steps
 
 1. Add the script tag to the site `<head>` (or the published site's custom code):
-   `<script src="https://cdn.grigora.app/commerce/v1/sdk.js" async></script>` — no `data-project` needed on a Grigora site.
+   `<script src="https://prod.grigora-cdn.com/commerce/v1/sdk.js" async></script>` — no `data-project` needed on a Grigora site.
 2. Remove the old `cart.js` include if you control it (harmless if both load; the SDK's drawer takes precedence visually).
 3. Replace injected buy widgets with `<g-buy-box product="{slug}">` where you render product pages.
 4. Optionally keep the platform checkout page by setting `data-checkout-url="/checkout"`.

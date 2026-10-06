@@ -19,6 +19,7 @@ async function fixture(t) {
 test("plans v1 independently of the prerelease package major and hashes every built file", async t => {
   const input = await fixture(t);
   const plan = await prepareDeployment(input);
+  assert.equal(plan.publicBase, "https://prod.grigora-cdn.com");
   assert.equal(plan.channelPrefix, "commerce/v1");
   assert.equal(plan.version, "0.1.0");
   assert.equal(plan.assets.length, 4);
@@ -30,7 +31,7 @@ test("plans v1 independently of the prerelease package major and hashes every bu
 
 test("rejects missing artifacts, bad revisions, channels and public origins before uploading", async t => {
   const input = await fixture(t);
-  for (const overrides of [{ revision: "main" }, { channel: "../v1" }, { publicBase: "http://cdn.example.com" }, { publicBase: "https://cdn.example.com/path" }]) {
+  for (const overrides of [{ revision: "main" }, { channel: "../v1" }, { publicBase: "http://cdn.example.com" }, { publicBase: "https://cdn.example.com/path" }, { publicBase: "https://cdn.grigora.app" }, { publicBase: "https://grigora.app" }, { publicBase: "https://cdn.grigora.co" }]) {
     await assert.rejects(prepareDeployment({ ...input, ...overrides }));
   }
   await fs.unlink(path.join(input.root, "packages/sdk/dist/sdk.min.js"));
