@@ -37,6 +37,23 @@ export function validateUploadConfig(env) {
   if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(env.R2_BUCKET)) throw new Error("Invalid R2_BUCKET.");
 }
 
+export function validateCacheHeaders(headers, alias = false) {
+  const value = headers.get("cache-control") || "";
+  const directives = new Map(value.toLowerCase().split(",").map(part => part.trim().split("=")));
+  const maxAge = directives.get("max-age");
+  const sharedMaxAge = directives.get("s-maxage");
+  if (!directives.has("public") || !/^\d+$/.test(maxAge || "")) throw new Error(`Missing public cache policy: ${value}`);
+  if (alias) {
+    if (Number(maxAge) > 60 || !directives.has("must-revalidate") || directives.has("immutable") ||
+        (sharedMaxAge !== undefined && (!/^\d+$/.test(sharedMaxAge) || Number(sharedMaxAge) > 60)) ||
+        directives.has("stale-while-revalidate") || directives.has("stale-if-error")) {
+      throw new Error(`Live SDK cache policy exceeds the 60-second update window: ${value}. Set Cloudflare browser and edge TTL to respect origin headers.`);
+    }
+  } else if (Number(maxAge) !== 31536000 || !directives.has("immutable")) {
+    throw new Error(`Immutable SDK builds must use a one-year immutable cache policy: ${value}`);
+  }
+}
+
 export async function publishDeployment(plan, { upload, verify, writeManifest }) {
   // Verify immutable assets through the public CDN before changing any live alias.
   for (const asset of plan.assets) await upload(asset, `${plan.immutablePrefix}/${asset.name}`, "public, max-age=31536000, immutable");
@@ -67,14 +84,28 @@ async function main() {
   const verify = async (asset, url, alias = false) => {
     // Verify the actual URL, not a cache-busting query that might hide a stale alias.
     const attempts = alias ? 20 : 3;
+    let verifiedResponses = 0;
+    let lastError = "";
     for (let attempt = 0; attempt < attempts; attempt++) {
       try {
         const response = await fetch(url, { signal: AbortSignal.timeout(15000), redirect: "error" });
-        if (response.ok && hash(Buffer.from(await response.arrayBuffer())) === asset.sha256) return;
-      } catch { /* Transient CDN propagation: retry, then fail the deployment. */ }
+        const bytes = Buffer.from(await response.arrayBuffer());
+        if (response.ok && hash(bytes) === asset.sha256) {
+          validateCacheHeaders(response.headers, alias);
+          // A cache MISS can carry correct origin headers while a subsequent
+          // HIT is rewritten by Cloudflare. Check two actual GETs, never HEAD.
+          verifiedResponses++;
+          if (verifiedResponses >= 2) return;
+          continue;
+        }
+        verifiedResponses = 0;
+      } catch (error) {
+        verifiedResponses = 0;
+        lastError = error.message;
+      }
       if (attempt + 1 < attempts) await new Promise(resolve => setTimeout(resolve, alias ? 15000 : 3000));
     }
-    throw new Error(`CDN verification failed for ${url}. Check the custom domain and cache rules before retrying.`);
+    throw new Error(`CDN verification failed for ${url}. Check the custom domain and cache rules before retrying. ${lastError}`);
   };
   const manifestBytes = await fs.readFile(manifestFile);
   await publishDeployment(plan, { upload, verify, writeManifest: (key, cache) => upload({ file: manifestFile, contentType: "application/json; charset=utf-8", sha256: hash(manifestBytes) }, key, cache) });

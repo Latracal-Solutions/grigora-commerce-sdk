@@ -3,7 +3,18 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { prepareDeployment, publishDeployment, validateUploadConfig } from "./deploy-cdn.mjs";
+import { prepareDeployment, publishDeployment, validateUploadConfig, validateCacheHeaders } from "./deploy-cdn.mjs";
+
+test("rejects CDN cache overrides that delay live updates", () => {
+  const headers = value => new Headers({ "Cache-Control": value });
+  validateCacheHeaders(headers("public, max-age=60, must-revalidate"), true);
+  validateCacheHeaders(headers("public, max-age=0, must-revalidate"), true);
+  for (const value of ["public, max-age=14400, must-revalidate", "public, max-age=60", "public, max-age=60, must-revalidate, s-maxage=7200", "public, max-age=60, must-revalidate, stale-while-revalidate=3600", "public, max-age=60, must-revalidate, immutable", ""]) {
+    assert.throws(() => validateCacheHeaders(headers(value), true));
+  }
+  validateCacheHeaders(headers("public, max-age=31536000, immutable"));
+  assert.throws(() => validateCacheHeaders(headers("public, max-age=60, must-revalidate")));
+});
 
 async function fixture(t) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "commerce-cdn-"));

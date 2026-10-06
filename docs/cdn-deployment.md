@@ -16,6 +16,10 @@ Defaults are bucket `cdn-grigora-co` and public origin `https://prod.grigora-cdn
 
 Connect the public CDN domain to this R2 bucket. Honor object `Cache-Control` for `/commerce/*` (remove any edge rule that forces a longer TTL on `/commerce/v1/*`). Channel files cache for 60 seconds; revision/content-addressed builds cache for a year. Allow public GET/HEAD; optionally configure CORS for source-map tooling. The workflow verifies actual public responses and fails if the domain, caching, or access rules prevent the expected bytes from being served.
 
+The scoped Cloudflare Cache Rule is in `infrastructure/commerce-cache-rule.json`. Add it to the zone's existing `http_request_cache_settings` ruleset, after any matching rules that override browser or edge TTL; do not replace the whole ruleset. It sets both browser and edge TTL to respect origin headers for this host's `/commerce/` paths only. After correcting an override, purge the five `/commerce/v1/` URLs (`sdk.js`, `sdk.min.js`, both maps, and `release.json`). Purging Cloudflare cannot evict files already cached in visitors' browsers under an earlier, longer TTL; those copies must expire or be reloaded with a cache bypass.
+
+Deployment verification uses two consecutive GET responses with matching hashes and valid cache headers. A HEAD or initial cache MISS can show origin headers while a subsequent cache HIT receives a longer browser TTL. Live aliases must retain `must-revalidate` and a browser/shared TTL no greater than 60 seconds, with no stale-serving directives; immutable builds must retain their one-year immutable policy.
+
 Optional GitHub environment reviewers provide a second gate before uploads. The workflow itself is manual; ordinary pushes and npm release tags never deploy the CDN.
 
 References: [R2 with the AWS CLI](https://developers.cloudflare.com/r2/examples/aws/aws-cli/), [R2 custom domains](https://developers.cloudflare.com/r2/buckets/public-buckets/), [GitHub manual workflows](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
@@ -31,6 +35,8 @@ References: [R2 with the AWS CLI](https://developers.cloudflare.com/r2/examples/
 Upload order: immutable `/commerce/builds/<commit>/<content-hash>/` assets → public CDN hash verification → the `/commerce/v1/` aliases → public alias hash verification → `release.json`. Every release includes both JavaScript bundles and their source maps. No bucket-wide sync, deletion, npm publish, or CloudFront invalidation is performed.
 
 `v1` is the browser compatibility channel, independent of the current npm package version (`0.x`). A breaking browser change needs a separately reviewed channel change. There is no automatic `latest` alias.
+
+The unique deployed version is the Git commit plus content hash recorded in `release.json`; the npm package version is not automatically incremented on every CDN release. Websites using `/commerce/v1/sdk.js` (or the API URL that redirects to it) pick up compatible updates on subsequent page loads after cache expiry, without republishing their HTML. An already-open page keeps its loaded SDK until a reload; the SDK is not hot-swapped during checkout. A site deliberately pinned to an immutable build URL stays on that build.
 
 Public alias verification retries for CDN propagation. If it fails after aliases were uploaded, the job is failed but some aliases may already have changed; use the previous successful revision to roll back. The two JS files are self-contained, so each can run independently during propagation.
 

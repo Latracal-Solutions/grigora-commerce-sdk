@@ -1,0 +1,12 @@
+{
+  "ref": "grigora_commerce_sdk_origin_cache_policy",
+  "description": "Commerce SDK: respect versioned and live-channel origin cache policies",
+  "expression": "(http.host eq \"prod.grigora-cdn.com\" and starts_with(http.request.uri.path, \"/commerce/\"))",
+  "action": "set_cache_settings",
+  "action_parameters": {
+    "cache": true,
+    "browser_ttl": { "mode": "respect_origin" },
+    "edge_ttl": { "mode": "respect_origin" }
+  },
+  "enabled": true
+}
