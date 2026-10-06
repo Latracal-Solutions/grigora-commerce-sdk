@@ -428,9 +428,35 @@ export interface CheckoutReturn {
   orderId: string;
   lookupToken: string;
   paymentIntentId: string;
+  /**
+   * The provider transaction the shopper was sent here to pay, when the URL
+   * names one (Paddle's `_ptxn`). Empty otherwise.
+   */
+  providerTransactionId: string;
+  /**
+   * True when the order came from a remembered checkout instead of the URL:
+   * a provider page that returns to one fixed address without an order
+   * reference (Paddle-hosted checkout).
+   */
+  recovered: boolean;
   /** null when no confirmation was needed, true/false when one was attempted. */
   confirmed: boolean | null;
   error: GrigoraError | null;
+}
+
+/**
+ * A hosted checkout this browser started, kept so a return page can find the
+ * order and its provider data again. Only values the API already sent to the
+ * browser are stored.
+ */
+export interface RememberedCheckout {
+  orderId: string;
+  lookupToken: string;
+  provider: ProviderId;
+  clientData: Record<string, unknown>;
+  /** Set right before leaving for a provider page that returns without an order reference. */
+  awaitingReturn: boolean;
+  at: number;
 }
 
 export interface CheckoutAPI {
@@ -448,6 +474,12 @@ export interface CheckoutAPI {
   handleReturn(url?: string): Promise<CheckoutReturn | null>;
   defaultSuccessUrl(): string;
   defaultCancelUrl(): string;
+  /** The hosted checkout this browser last started (within a day), optionally only for `orderId`. */
+  remembered(orderId?: string): RememberedCheckout | null;
+  /** Mark the remembered checkout as leaving for a provider page that returns without an order reference. */
+  awaitReturn(orderId: string): void;
+  /** Drop the remembered checkout, e.g. once its order is paid. */
+  forget(): void;
 }
 
 export interface OrderLineItem {
@@ -590,6 +622,23 @@ export interface PaymentProviderAdapter {
   destroy(): void;
   /** Label for the pay button, e.g. "Pay $29.00" or "Continue to PayPal". */
   submitLabel?(context: PaymentAdapterContext): string;
+  /**
+   * For providers the API only offers as hosted (Paddle): true when this
+   * adapter collects payment on the page for `session` instead of the
+   * redirect to `session.checkoutUrl`.
+   */
+  handlesHostedSession?(session: CheckoutSession): boolean;
+  /**
+   * The provider's signed webhook settles the order and there is nothing to
+   * post to /checkout/embedded/confirm after `onComplete`.
+   */
+  readonly settlesByWebhook?: boolean;
+  /**
+   * Collect payment for an unpaid order the shopper came back to, e.g. the
+   * order page a Paddle transaction points at. `context.session` is rebuilt
+   * from the remembered checkout.
+   */
+  resume?(context: PaymentAdapterContext): Promise<void>;
 }
 
 export interface ProviderRegistry {

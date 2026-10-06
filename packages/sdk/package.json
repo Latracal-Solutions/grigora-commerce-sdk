@@ -1,7 +1,7 @@
 {
   "name": "@grigora/commerce",
   "version": "0.1.0",
-  "description": "Grigora Commerce SDK, batteries included: core + UI + Stripe and Razorpay adapters, plus the single-script CDN bundle (sdk.js).",
+  "description": "Grigora Commerce SDK, batteries included: core + UI + Stripe, Razorpay and Paddle adapters, plus the single-script CDN bundle (sdk.js).",
   "license": "MIT",
   "type": "module",
   "sideEffects": [
@@ -52,7 +52,8 @@
     "@grigora/commerce-core": "^0.1.0",
     "@grigora/commerce-ui": "^0.1.0",
     "@grigora/commerce-adapter-stripe": "^0.1.0",
-    "@grigora/commerce-adapter-razorpay": "^0.1.0"
+    "@grigora/commerce-adapter-razorpay": "^0.1.0",
+    "@grigora/commerce-adapter-paddle": "^0.1.0"
   },
   "unpkg": "./dist/sdk.min.js",
   "jsdelivr": "./dist/sdk.min.js"

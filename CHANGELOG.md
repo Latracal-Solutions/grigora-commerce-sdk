@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- `@grigora/commerce-adapter-paddle`: opens Paddle.js for the Paddle transaction the API creates, as an overlay (on "Pay") or as an inline form in the payment step. Included in `@grigora/commerce` and the CDN bundle. Before this, the hosted redirect sent shoppers to a page that never opened Paddle, so Paddle orders stayed unpaid.
+- `<g-order-status>` shows **Pay with Paddle** for an unpaid Paddle order (Paddle's `_ptxn` order page) and opens Paddle again, only in the browser that started that checkout. Paddle-hosted checkout goes through this page, and the SDK finds the order again when Paddle returns to its fixed redirect URL.
+- Core: `CheckoutReturn.providerTransactionId` and `recovered`; `checkout.remembered()`, `awaitReturn()` and `forget()`; adapter hooks `handlesHostedSession`, `settlesByWebhook` and `resume`.
+
+### Changed
+- Paddle orders are not confirmed from the browser. The signed webhook settles them.
+- UI size budget 26 kB → 27 kB.
+
 ## [0.1.0] - 2026-09-05
 
 First release.

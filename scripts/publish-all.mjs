@@ -13,6 +13,7 @@ const ORDER = [
   "@grigora/commerce-ui",
   "@grigora/commerce-adapter-stripe",
   "@grigora/commerce-adapter-razorpay",
+  "@grigora/commerce-adapter-paddle",
   "@grigora/commerce-react",
   "@grigora/commerce-vue",
   "@grigora/commerce",

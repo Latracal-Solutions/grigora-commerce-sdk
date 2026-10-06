@@ -7,7 +7,7 @@
   {
     "name": "@grigora/commerce-ui (ESM, brotli, excludes core)",
     "path": "packages/ui/dist/index.js",
-    "limit": "26 KB"
+    "limit": "27 KB"
   },
   {
     "name": "@grigora/commerce-adapter-stripe (ESM, brotli)",
@@ -17,6 +17,11 @@
   {
     "name": "@grigora/commerce-adapter-razorpay (ESM, brotli)",
     "path": "packages/adapter-razorpay/dist/index.js",
+    "limit": "3 KB"
+  },
+  {
+    "name": "@grigora/commerce-adapter-paddle (ESM, brotli)",
+    "path": "packages/adapter-paddle/dist/index.js",
     "limit": "3 KB"
   },
   {
@@ -30,7 +35,7 @@
     "limit": "3 KB"
   },
   {
-    "name": "sdk.min.js (CDN bundle: core + UI + Stripe + Razorpay, brotli)",
+    "name": "sdk.min.js (CDN bundle: core + UI + Stripe + Razorpay + Paddle, brotli)",
     "path": "packages/sdk/dist/sdk.min.js",
     "limit": "45 KB"
   }

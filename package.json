@@ -15,7 +15,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "npm run build -w @grigora/commerce-core && npm run build -w @grigora/commerce-ui && npm run build -w @grigora/commerce-adapter-stripe && npm run build -w @grigora/commerce-adapter-razorpay && npm run build -w @grigora/commerce-react && npm run build -w @grigora/commerce-vue && npm run build -w @grigora/commerce",
+    "build": "npm run build -w @grigora/commerce-core && npm run build -w @grigora/commerce-ui && npm run build -w @grigora/commerce-adapter-stripe && npm run build -w @grigora/commerce-adapter-razorpay && npm run build -w @grigora/commerce-adapter-paddle && npm run build -w @grigora/commerce-react && npm run build -w @grigora/commerce-vue && npm run build -w @grigora/commerce",
     "clean": "rm -rf packages/*/dist",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",

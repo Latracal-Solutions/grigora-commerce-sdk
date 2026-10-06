@@ -18,7 +18,8 @@ import {
 import { getContext, requireContext, whenContext, type UIContext } from "./context";
 import { COUNTRIES } from "./countries";
 import { debounce, h, icon, image, replaceChildren, setText, toggle } from "./dom";
-import { GOrderStatus } from "./order-status";
+import { resolveAccent } from "./accent";
+import type { GOrderStatus } from "./order-status";
 import { getReturn, withOrderParams } from "./return";
 
 type Scope = "billing" | "shipping";
@@ -676,6 +677,13 @@ export class GCheckout extends HTMLElement {
         this.finish(session.orderId, session.lookupToken, session.checkoutUrl);
         return;
       }
+      // Paddle is hosted-only on the API, but its adapter collects payment on
+      // this page (Paddle.js overlay or inline) instead of the redirect.
+      const inPage = session.mode === "hosted" ? commerce.providers.get(session.provider) : null;
+      if (inPage?.handlesHostedSession?.(session)) {
+        await this.mountEmbedded(session);
+        return;
+      }
       if (session.mode === "hosted") {
         this.phase = "redirecting";
         this.renderPayButton();
@@ -697,7 +705,8 @@ export class GCheckout extends HTMLElement {
   private async mountEmbedded(session: CheckoutSession): Promise<void> {
     const commerce = this.commerceOrThrow();
     const adapter = commerce.providers.get(session.provider);
-    if (!adapter || !adapter.supportsEmbedded) {
+    const hostedInPage = session.mode === "hosted" && Boolean(adapter?.handlesHostedSession?.(session));
+    if (!adapter || (!adapter.supportsEmbedded && !hostedInPage)) {
       await this.fallbackToHosted(session);
       return;
     }
@@ -709,6 +718,12 @@ export class GCheckout extends HTMLElement {
     } catch (error) {
       commerce.log("embedded adapter failed, falling back to hosted", error);
       adapter.destroy();
+      if (hostedInPage) {
+        // The session is already hosted: follow its checkout URL (the order
+        // page, which can still collect payment) instead of creating another.
+        await this.redirectHosted(session);
+        return;
+      }
       await this.fallbackToHosted(session);
       return;
     }
@@ -724,6 +739,18 @@ export class GCheckout extends HTMLElement {
       this.els.paymentMount.scrollIntoView?.({ block: "nearest" });
     }
     (this.els.payButton as HTMLButtonElement).focus();
+  }
+
+  private async redirectHosted(session: CheckoutSession): Promise<void> {
+    const commerce = this.commerceOrThrow();
+    toggle(this.els.paymentBlock, false);
+    replaceChildren(this.els.paymentMount);
+    this.phase = "redirecting";
+    this.renderPayButton();
+    this.setMessage(this.t("redirecting", { provider: providerLabel(session.provider) }), "info");
+    const hosted = commerce.providers.get("hosted");
+    if (!hosted) throw new Error(this.t("error"));
+    await hosted.submit(this.makeAdapterContext(session));
   }
 
   private async fallbackToHosted(session: CheckoutSession): Promise<void> {
@@ -789,6 +816,14 @@ export class GCheckout extends HTMLElement {
     this.providerAcknowledged = true;
     this.phase = "submitting";
     this.renderPayButton();
+    if (this.adapter?.settlesByWebhook) {
+      // Nothing to confirm from the browser (Paddle): the signed webhook
+      // settles the order and the status page waits for it.
+      commerce.checkout.reset();
+      commerce.emit("checkout:completed", { orderId: session.orderId, lookupToken: session.lookupToken, order: null });
+      this.finish(session.orderId, session.lookupToken);
+      return;
+    }
     try {
       await commerce.checkout.confirm({ provider: session.provider, orderId: session.orderId, payload });
     } catch (error) {
@@ -807,20 +842,4 @@ export class GCheckout extends HTMLElement {
   }
 }
 
-/**
- * The accent the payment form should use: the site's CSS variable first (that
- * is what the rest of the UI is painted with), the store's setting only as a
- * fallback, then the SDK default.
- */
-export function resolveAccent(element: Element, storeAccent = ""): string {
-  let computed = "";
-  try {
-    computed = getComputedStyle(element).getPropertyValue("--g-accent").trim();
-  } catch {
-    computed = "";
-  }
-  const valid = (value: string) => /^#[0-9a-f]{3,8}$/i.test(value) || /^(rgb|hsl|oklch|color)\(/i.test(value);
-  if (valid(computed)) return computed;
-  if (valid(storeAccent)) return storeAccent;
-  return "#111827";
-}
+export { resolveAccent };

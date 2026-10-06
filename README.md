@@ -17,15 +17,16 @@ That is a working store with checkout.
 
 | Package | What | Size (brotli) |
 | --- | --- | --- |
-| [`@grigora/commerce`](packages/sdk) | Everything: core + UI + Stripe + Razorpay adapters, `createStorefront()`, and the CDN bundle `dist/sdk.min.js` | bundle ≈ 35 kB |
+| [`@grigora/commerce`](packages/sdk) | Everything: core + UI + Stripe + Razorpay + Paddle adapters, `createStorefront()`, and the CDN bundle `dist/sdk.min.js` | bundle ≈ 35 kB |
 | [`@grigora/commerce-core`](packages/core) | Headless client: cart, products, checkout, orders, currency, typed events. Zero dependencies, SSR-safe | ≈ 17 kB |
 | [`@grigora/commerce-ui`](packages/ui) | Web components and data attributes: `<g-cart-drawer>`, `<g-buy-box>`, `<g-checkout>`, `<g-order-status>`… | ≈ 24 kB |
 | [`@grigora/commerce-adapter-stripe`](packages/adapter-stripe) | Stripe Payment Element (embedded) | ≈ 1 kB |
 | [`@grigora/commerce-adapter-razorpay`](packages/adapter-razorpay) | Razorpay Checkout (overlay) | ≈ 1 kB |
+| [`@grigora/commerce-adapter-paddle`](packages/adapter-paddle) | Paddle Billing checkout (Paddle.js overlay or inline) | ≈ 2 kB |
 | [`@grigora/commerce-react`](packages/react) | Provider, hooks (`useCart`, `useProduct`…), components | ≈ 2.5 kB |
 | [`@grigora/commerce-vue`](packages/vue) | Plugin and composables | ≈ 1 kB |
 
-PayPal and Paddle are supported through the hosted redirect that is built into the core (the Grigora API has no embedded path for them). Budgets are enforced in CI with size-limit.
+PayPal is supported through the hosted redirect built into the core. Paddle is hosted-only on the Grigora API, and the Paddle adapter opens Paddle.js for that transaction on your page, as an overlay or inline. Paddle-hosted checkout goes through the order page. Budgets are enforced in CI with size-limit.
 
 ## Layers
 
@@ -34,7 +35,7 @@ sdk.js (CDN)  →  window.Grigora.Commerce, auto-init from <script data-project>
 @grigora/commerce-react / -vue
 @grigora/commerce-ui          drawer · badge · buy box · checkout · order status · data-* bindings
 @grigora/commerce-core        client · cart · catalog · checkout · orders · currency · events · providers
-adapters                      stripe (Payment Element) · razorpay (overlay) · hosted redirect (built in)
+adapters                      stripe (Payment Element) · razorpay (overlay) · paddle (overlay/inline) · hosted redirect (built in)
 Grigora commerce API          https://api.grigora.co/general/commerce
 ```
 
