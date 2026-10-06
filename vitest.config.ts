@@ -10,6 +10,7 @@ export default defineConfig({
       "@grigora/commerce-ui": `${root}packages/ui/src/index.ts`,
       "@grigora/commerce-adapter-stripe": `${root}packages/adapter-stripe/src/index.ts`,
       "@grigora/commerce-adapter-razorpay": `${root}packages/adapter-razorpay/src/index.ts`,
+      "@grigora/commerce-adapter-paddle": `${root}packages/adapter-paddle/src/index.ts`,
       "@grigora/commerce-react": `${root}packages/react/src/index.ts`,
       "@grigora/commerce-vue": `${root}packages/vue/src/index.ts`,
       "@grigora/commerce": `${root}packages/sdk/src/index.ts`,

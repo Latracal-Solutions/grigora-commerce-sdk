@@ -84,8 +84,10 @@ checkout.confirm({ provider, orderId, payload }): Promise<{ ok, orderId, order }
 checkout.cancel(session?): Promise<void>
 checkout.current(): CheckoutSession | null; checkout.reset()
 checkout.resolveMode(store, preference?): "embedded" | "hosted" | "unavailable"
-checkout.parseReturn(url?): { orderId, lookupToken, paymentIntentId } | null
+checkout.parseReturn(url?): { orderId, lookupToken, paymentIntentId, providerTransactionId, recovered } | null
 checkout.handleReturn(url?): Promise<CheckoutReturn | null>      // confirms a Stripe redirect payment when present
+checkout.remembered(orderId?): RememberedCheckout | null         // the hosted checkout this browser last started (24 h)
+checkout.awaitReturn(orderId) / checkout.forget()                // used by adapters for provider pages that return without an order reference
 checkout.defaultSuccessUrl(); checkout.defaultCancelUrl()
 ```
 
@@ -135,7 +137,7 @@ providers.register(adapter); providers.get(id); providers.has(id); providers.lis
 registerProvider(adapter)   // module-level: applies to the default instance and every instance created afterwards
 ```
 
-`PaymentProviderAdapter`: `{ id, supportsEmbedded, loadScript?(), mount(ctx), submit(ctx), destroy(), submitLabel?(ctx) }`. The built-in `hosted` adapter redirects to `session.checkoutUrl`. Stripe and Razorpay adapters live in their own packages.
+`PaymentProviderAdapter`: `{ id, supportsEmbedded, loadScript?(), mount(ctx), submit(ctx), destroy(), submitLabel?(ctx), handlesHostedSession?(session), settlesByWebhook?, resume?(ctx) }`. The built-in `hosted` adapter redirects to `session.checkoutUrl`. `handlesHostedSession` lets an adapter pay a hosted session on the page. `settlesByWebhook` skips `/checkout/embedded/confirm`. `resume` collects payment for an unpaid order from `<g-order-status>`. Paddle uses all three. Stripe, Razorpay and Paddle adapters live in their own packages.
 
 ## Events
 

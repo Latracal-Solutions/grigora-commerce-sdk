@@ -6,7 +6,7 @@
 
 - To add commerce to a page: one script tag `<script src="https://cdn.grigora.co/commerce/v1/sdk.js" data-project="PROJECT_ID" async></script>`, then `<button data-grigora-add data-product-slug="SLUG">` for buttons, `<a data-cart-open>Cart (<span data-cart-count>0</span>)</a>` for the cart, `<g-buy-box product="SLUG"></g-buy-box>` on product pages.
 - Read products from `GET https://api.grigora.co/general/commerce/storefront/PROJECT_ID/catalog` (response wrapped in `Output`). Never invent products or prices.
-- npm: `@grigora/commerce` (everything), `@grigora/commerce-core` (headless), `@grigora/commerce-ui`, `@grigora/commerce-react`, `@grigora/commerce-vue`, `@grigora/commerce-adapter-stripe`, `@grigora/commerce-adapter-razorpay`.
+- npm: `@grigora/commerce` (everything), `@grigora/commerce-core` (headless), `@grigora/commerce-ui`, `@grigora/commerce-react`, `@grigora/commerce-vue`, `@grigora/commerce-adapter-stripe`, `@grigora/commerce-adapter-paddle`, `@grigora/commerce-adapter-razorpay`.
 - Theme with CSS variables on `:root`: `--g-accent`, `--g-bg`, `--g-fg`, `--g-radius`, `--g-font`.
 
 ## Docs

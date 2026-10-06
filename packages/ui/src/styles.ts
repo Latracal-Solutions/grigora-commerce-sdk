@@ -238,7 +238,9 @@ const RAW_CSS = `
 [data-g-ui] .g-order-icon{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;background:#f3f4f6;color:var(--g-muted)}
 [data-g-ui] .g-order-icon svg{width:30px;height:30px}
 [data-g-ui].g-order[data-state="paid"] .g-order-icon{background:#ecfdf5;color:var(--g-success)}
-[data-g-ui].g-order[data-state="pending"] .g-order-icon{background:#fffbeb;color:#b45309}
+[data-g-ui].g-order[data-state="pending"] .g-order-icon,[data-g-ui].g-order[data-state="payment"] .g-order-icon{background:#fffbeb;color:#b45309}
+[data-g-ui] .g-order-payment{width:100%;max-width:560px;text-align:left}
+[data-g-ui] .g-order-payment:empty{display:none}
 [data-g-ui].g-order[data-state="failed"] .g-order-icon,[data-g-ui].g-order[data-state="error"] .g-order-icon{background:#fef2f2;color:var(--g-danger)}
 [data-g-ui] .g-order h2{margin:0;font-size:24px;font-weight:700}
 [data-g-ui] .g-order p{margin:0;color:var(--g-muted);max-width:52ch}

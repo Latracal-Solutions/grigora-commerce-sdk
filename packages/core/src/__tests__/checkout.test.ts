@@ -305,6 +305,43 @@ describe("checkout", () => {
     expect(calls.find((c) => c.path === "/checkout/embedded/confirm")?.body).toMatchObject({ payment_intent_id: "pi_9", order_id: "ord_1" });
   });
 
+  it("reads a Paddle transaction from the return URL", async () => {
+    const { commerce } = makeCommerce(api());
+    const token = "tok_".padEnd(24, "q");
+    const txn = "txn_01habcdefghjkmnpqrstvwxyz";
+    expect(commerce.checkout.parseReturn(`https://shop.test/thanks?order_id=ord_1&lookup_token=${token}&_ptxn=${txn}`)).toMatchObject({ providerTransactionId: txn, recovered: false });
+    expect(commerce.checkout.parseReturn(`https://shop.test/thanks?order_id=ord_1&lookup_token=${token}&paddle_txn=${txn}`)).toMatchObject({ providerTransactionId: txn });
+    expect(commerce.checkout.parseReturn(`https://shop.test/thanks?order_id=ord_1&lookup_token=${token}&_ptxn=bogus`)).toMatchObject({ providerTransactionId: "" });
+  });
+
+  it("remembers a hosted session and recovers it once after a provider return with no order reference", async () => {
+    const storage = new MemoryStorageAdapter();
+    seeded(storage);
+    const txn = "txn_01habcdefghjkmnpqrstvwxyz";
+    const { commerce } = makeCommerce(
+      api({
+        "/checkout/session": () => ({
+          body: checkoutOutput({ provider: "paddle", mode: "hosted", checkout_url: `https://shop.test/thanks?order_id=ord_p&_ptxn=${txn}`, checkout_id: txn, order_id: "ord_p", lookup_token: "tok_".padEnd(24, "p"), client_token: "test_1", paddle_display_mode: "hosted" }),
+        }),
+      }),
+      { storage }
+    );
+    await commerce.checkout.startHosted({ billingAddress: BILLING });
+    expect(commerce.checkout.remembered("ord_p")).toMatchObject({ provider: "paddle", awaitingReturn: false, clientData: { checkout_id: txn, client_token: "test_1" } });
+    expect(commerce.checkout.remembered("ord_other")).toBeNull();
+    // Not marked: a plain visit to the page is not a return.
+    expect(commerce.checkout.parseReturn("https://shop.test/thanks")).toBeNull();
+
+    commerce.checkout.awaitReturn("ord_p");
+    const recovered = await commerce.checkout.handleReturn("https://shop.test/thanks");
+    expect(recovered).toMatchObject({ orderId: "ord_p", lookupToken: "tok_".padEnd(24, "p"), providerTransactionId: txn, recovered: true });
+    // Used once.
+    expect(await commerce.checkout.handleReturn("https://shop.test/thanks")).toBeNull();
+    expect(commerce.checkout.remembered("ord_p")).not.toBeNull();
+    commerce.checkout.forget();
+    expect(commerce.checkout.remembered()).toBeNull();
+  });
+
   it("quotes with addresses through the cart", async () => {
     const storage = new MemoryStorageAdapter();
     seeded(storage);

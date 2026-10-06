@@ -8,6 +8,37 @@ import type { GOrderStatus } from "../order-status";
 import { resetReturn } from "../return";
 import { catalogLine, fakeFetch, serverLine, validateResponse, STORE, type FakeRequest } from "../../../core/src/__tests__/helpers";
 import { createCommerce } from "../../../core/src/commerce";
+import { createPaddleAdapter, resetPaddle, type PaddleCheckoutEvent, type PaddleGlobal } from "../../../adapter-paddle/src/index";
+
+const PADDLE_TXN = "txn_01habcdefghjkmnpqrstvwxyz";
+const PADDLE_STORE = { ...STORE, checkout: { ...STORE.checkout, provider: "paddle", mode: "hosted", embedded_supported: false, hosted_supported: true } };
+
+function fakePaddle() {
+  let callback: ((event: PaddleCheckoutEvent) => void) | undefined;
+  const paddle = {
+    Environment: { set: vi.fn() },
+    Initialize: vi.fn((options: { eventCallback?: (event: PaddleCheckoutEvent) => void }) => {
+      callback = options.eventCallback;
+    }),
+    Checkout: { open: vi.fn(), close: vi.fn() },
+  };
+  return { paddle: paddle as unknown as PaddleGlobal & typeof paddle, emit: (name: string) => callback?.({ name }) };
+}
+
+function paddleCheckout(orderId: string, mode = "overlay") {
+  return {
+    provider: "paddle",
+    mode: "hosted",
+    paddle_display_mode: mode,
+    paddle_hosted_url: "",
+    checkout_id: PADDLE_TXN,
+    checkout_url: `https://shop.test/checkout?order_id=${orderId}&_ptxn=${PADDLE_TXN}`,
+    order_id: orderId,
+    client_token: "test_token",
+    environment: "sandbox",
+    lookup_token: "tok_".padEnd(24, "z"),
+  };
+}
 
 const TEE = {
   ...catalogLine("tee"),
@@ -96,6 +127,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  resetPaddle();
   handle?.destroy();
   handle = null;
   commerce?.destroy();
@@ -511,6 +543,68 @@ describe("checkout", () => {
     expect(navigate).toHaveBeenCalledWith("https://checkout.stripe.com/s/1");
   });
 
+  it("opens Paddle on the page for a hosted Paddle session and waits for the webhook instead of confirming", async () => {
+    setup(
+      api({
+        "/storefront/p1/settings": () => ({ body: { store: PADDLE_STORE } }),
+        "/checkout/session": () => ({ body: { checkout: paddleCheckout("ord_pd"), order_id: "ord_pd", subtotal_amount: 500, total_amount: 500, currency: "USD" } }),
+      })
+    );
+    const { paddle, emit } = fakePaddle();
+    commerce.providers.register(createPaddleAdapter({ loader: async () => paddle }));
+    const completed = vi.fn();
+    commerce.on("checkout:completed", completed);
+    await commerce.cart.add({ productId: "a", unitAmount: 500 });
+    const checkout = document.createElement("g-checkout") as GCheckout;
+    document.body.appendChild(checkout);
+    await settle(10);
+    fill(checkout, "billing", BILLING);
+    await settle(30);
+    const pay = checkout.querySelector<HTMLButtonElement>("[data-pay]")!;
+    expect(pay.textContent).toContain("Continue to Paddle");
+    pay.click();
+    await settle(10);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(checkout.querySelector("[data-pay]")?.textContent).toContain("Pay $5.00");
+    checkout.querySelector<HTMLButtonElement>("[data-pay]")!.click();
+    await settle(10);
+    expect(paddle.Checkout.open).toHaveBeenCalledWith(expect.objectContaining({ transactionId: PADDLE_TXN, customer: expect.objectContaining({ email: "ada@example.com" }) }));
+    emit("checkout.completed");
+    await settle(10);
+    expect(calls.some((c) => c.path === "/checkout/embedded/confirm")).toBe(false);
+    expect(completed).toHaveBeenCalledWith({ orderId: "ord_pd", lookupToken: "tok_".padEnd(24, "z"), order: null });
+    expect(navigate).toHaveBeenCalledTimes(1);
+    const target = new URL(navigate.mock.calls[0][0] as string);
+    expect(target.searchParams.get("order_id")).toBe("ord_pd");
+  });
+
+  it("follows the Paddle order page when Paddle.js cannot load, without a second order", async () => {
+    setup(
+      api({
+        "/storefront/p1/settings": () => ({ body: { store: PADDLE_STORE } }),
+        "/checkout/session": () => ({ body: { checkout: paddleCheckout("ord_pd"), order_id: "ord_pd", subtotal_amount: 500, total_amount: 500, currency: "USD" } }),
+      })
+    );
+    commerce.providers.register(
+      createPaddleAdapter({
+        loader: async () => {
+          throw new Error("blocked");
+        },
+      })
+    );
+    await commerce.cart.add({ productId: "a", unitAmount: 500 });
+    const checkout = document.createElement("g-checkout") as GCheckout;
+    document.body.appendChild(checkout);
+    await settle(10);
+    fill(checkout, "billing", BILLING);
+    await settle(30);
+    checkout.querySelector<HTMLButtonElement>("[data-pay]")!.click();
+    await settle(10);
+    expect(calls.filter((c) => c.path === "/checkout/session")).toHaveLength(1);
+    expect(calls.some((c) => c.path === "/checkout/cancel")).toBe(false);
+    expect(navigate).toHaveBeenCalledWith(paddleCheckout("ord_pd").checkout_url);
+  });
+
   it("shows the order status instead of the form when returning from payment", async () => {
     window.history.replaceState({}, "", `/checkout?order_id=ord_1&lookup_token=${"tok_".padEnd(24, "r")}`);
     setup();
@@ -583,6 +677,47 @@ describe("order status", () => {
     document.body.appendChild(bad);
     await settle(10);
     expect(bad.getAttribute("data-state")).toBe("error");
+  });
+
+  it("offers and opens Paddle for an unpaid order the shopper was sent to pay, then confirms it", async () => {
+    const storage = new MemoryStorageAdapter();
+    storage.set("grigora-commerce-checkout-p1", JSON.stringify({ orderId: "ord_pp", lookupToken: "tok_".padEnd(24, "z"), provider: "paddle", clientData: paddleCheckout("ord_pp"), awaitingReturn: false, at: Date.now() }));
+    window.history.replaceState({}, "", `/checkout?order_id=ord_pp&lookup_token=${"tok_".padEnd(24, "z")}&_ptxn=${PADDLE_TXN}`);
+    let paid = false;
+    setup(
+      api({ "/orders/lookup": (req) => ({ body: { order: { order_id: req.body.order_id, status: paid ? "paid" : "pending", payment_status: paid ? "paid" : "pending", total_amount: 500, currency: "USD" } } }) }),
+      storage
+    );
+    const { paddle, emit } = fakePaddle();
+    commerce.providers.register(createPaddleAdapter({ loader: async () => paddle }));
+    resetReturn(commerce);
+    const status = document.createElement("g-order-status") as GOrderStatus;
+    document.body.appendChild(status);
+    await settle(10);
+    expect(status.getAttribute("data-state")).toBe("payment");
+    expect(status.textContent).toContain("Pay with Paddle");
+    // Opened once on arrival; Paddle.js never sees `_ptxn`.
+    expect(paddle.Checkout.open).toHaveBeenCalledTimes(1);
+    expect(new URL(window.location.href).searchParams.get("_ptxn")).toBeNull();
+    paid = true;
+    emit("checkout.completed");
+    await settle(10);
+    expect(status.getAttribute("data-state")).toBe("paid");
+    expect(commerce.checkout.remembered()).toBeNull();
+  });
+
+  it("does not offer payment for a Paddle order this browser did not start", async () => {
+    window.history.replaceState({}, "", `/checkout?order_id=ord_pending&lookup_token=${"tok_".padEnd(24, "z")}&_ptxn=${PADDLE_TXN}`);
+    setup();
+    const { paddle } = fakePaddle();
+    commerce.providers.register(createPaddleAdapter({ loader: async () => paddle }));
+    resetReturn(commerce);
+    const status = document.createElement("g-order-status") as GOrderStatus;
+    status.setAttribute("poll", "off");
+    document.body.appendChild(status);
+    await settle(10);
+    expect(status.getAttribute("data-state")).toBe("pending");
+    expect(paddle.Checkout.open).not.toHaveBeenCalled();
   });
 
   it("opens a status dialog on any page that carries return parameters", async () => {

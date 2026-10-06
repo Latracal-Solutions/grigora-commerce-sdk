@@ -4,5 +4,7 @@ export { createStripeAdapter, stripeAdapter, STRIPE_SCRIPT } from "@grigora/comm
 export type { StripeAdapterOptions } from "@grigora/commerce-adapter-stripe";
 export { createRazorpayAdapter, razorpayAdapter, RAZORPAY_SCRIPT } from "@grigora/commerce-adapter-razorpay";
 export type { RazorpayAdapterOptions } from "@grigora/commerce-adapter-razorpay";
+export { createPaddleAdapter, paddleAdapter, PADDLE_SCRIPT, paddleSessionConfig, paddleHostedCheckoutUrl } from "@grigora/commerce-adapter-paddle";
+export type { PaddleAdapterOptions, PaddleGlobal, PaddleCheckoutEvent } from "@grigora/commerce-adapter-paddle";
 export { createStorefront, installGlobal, autoInit } from "./global";
 export type { StorefrontOptions, GrigoraCommerceGlobal, GrigoraGlobal } from "./global";

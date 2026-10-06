@@ -9,12 +9,27 @@ The store settings (`GET /storefront/:project/settings`) carry a server-computed
 | Stripe with publishable key + webhook | `embedded` (Payment Element) |
 | Stripe with `checkout_mode: stripe_hosted` or Stripe Tax | `hosted` (Stripe Checkout page) |
 | Razorpay with key id + secret + webhook | `embedded` (overlay) |
-| PayPal or Paddle, credentials + webhook | `hosted` (the API has no embedded path for them) |
+| PayPal, credentials + webhook | `hosted` (redirect to PayPal) |
+| Paddle, API key + webhook + client-side token (overlay/inline) or hosted checkout link | `hosted`: the Paddle adapter opens Paddle.js on the page for the transaction (see below) |
 | Anything missing | `unavailable`, with a merchant-facing `message` |
 
-The SDK then applies the integrator's preference (`payment: "auto" | "embedded" | "hosted"`) and checks that an adapter for the provider is registered. The CDN bundle and `@grigora/commerce` ship Stripe and Razorpay adapters; a headless `@grigora/commerce-core` install without adapters always uses hosted.
+The SDK then applies the integrator's preference (`payment: "auto" | "embedded" | "hosted"`) and checks that an adapter for the provider is registered. The CDN bundle and `@grigora/commerce` ship Stripe, Razorpay and Paddle adapters; a headless `@grigora/commerce-core` install without adapters always uses hosted.
 
 If an embedded adapter's script fails to load (blocked by an extension, CSP, network), `<g-checkout>` cancels the pending order and restarts as hosted. Nothing is lost: the pending order held stock for a moment and was released.
+
+## Paddle
+
+The API only creates Paddle checkouts as hosted sessions. A Paddle Billing transaction has no payment page of its own. Its checkout URL is your `successUrl` with `order_id`, `lookup_token` and `_ptxn` added, and that page has to open Paddle.js. What the shopper sees depends on the store's **Checkout display** setting in Grigora:
+
+- **Overlay**: "Continue to payment" creates the order, then "Pay" opens Paddle's overlay on the checkout page.
+- **Inline**: Paddle's form is embedded in the payment step and has its own pay button.
+- **Paddle-hosted page**: the shopper goes to the order page, which forwards them to the hosted checkout created in Paddle. Paddle returns from a hosted checkout to one fixed redirect URL with no order reference. Set that redirect URL to your success page. The SDK saves the order right before leaving and shows its status when the shopper comes back.
+
+The signed Paddle webhook settles the order. The SDK never confirms Paddle from the browser. It shows the status page, which waits for the webhook.
+
+When a shopper reaches an unpaid Paddle order page (single-product checkout, Paddle.js blocked on the checkout page, or coming back later), `<g-order-status>` shows **Pay with Paddle** and opens Paddle again for the same transaction. This only happens in the browser that started the checkout, because Paddle's public setup comes from the session the SDK saved then. If Paddle.js cannot load during checkout, the SDK follows the transaction's checkout URL instead of creating a second order.
+
+In Paddle: approve your site's domain in **Checkout > Website approval** and set a default payment link. Use the sandbox client-side token (`test_…`) while the store is in test mode.
 
 ## Free carts
 
@@ -51,4 +66,4 @@ Every `/checkout/session`, `/checkout/embedded` and `/checkout/create` request c
 
 ## Testing
 
-Use the provider's test mode in Grigora settings (`checkout.testMode` is exposed and shown as a "Test mode" pill in the checkout). Stripe test cards, Razorpay test keys and the sandbox accounts of PayPal/Paddle all flow through the same code.
+Use the provider's test mode in Grigora settings (`checkout.testMode` is exposed and shown as a "Test mode" pill in the checkout). Stripe test cards, Razorpay test keys and the sandbox accounts of PayPal/Paddle all flow through the same code. Paddle loads its sandbox environment when the session says `environment: "sandbox"`.

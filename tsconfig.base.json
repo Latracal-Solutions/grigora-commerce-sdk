@@ -21,6 +21,7 @@
       "@grigora/commerce-ui": ["packages/ui/src/index.ts"],
       "@grigora/commerce-adapter-stripe": ["packages/adapter-stripe/src/index.ts"],
       "@grigora/commerce-adapter-razorpay": ["packages/adapter-razorpay/src/index.ts"],
+      "@grigora/commerce-adapter-paddle": ["packages/adapter-paddle/src/index.ts"],
       "@grigora/commerce-react": ["packages/react/src/index.ts"],
       "@grigora/commerce-vue": ["packages/vue/src/index.ts"],
       "@grigora/commerce": ["packages/sdk/src/index.ts"]

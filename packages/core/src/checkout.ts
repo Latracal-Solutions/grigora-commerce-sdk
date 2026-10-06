@@ -17,14 +17,22 @@ import type {
   ConfirmResult,
   GrigoraEvents,
   PaymentPreference,
+  RememberedCheckout,
   ResolvedConfig,
   SingleCheckoutInput,
   StoreSettings,
 } from "./types";
+import { readJson, writeJson } from "./storage";
 import { absoluteUrl, clean, currentPageUrl, currentUrl, isBrowser, stableStringify, toInt, uuid, type Logger } from "./util";
 import { addressErrorMessage, addressErrors, normalizeAddress, normalizeShippingAddress, toApiAddress } from "./validation";
 
 type Raw = Record<string, unknown>;
+
+/** How long a remembered hosted checkout stays usable by a return page. */
+const REMEMBER_MS = 24 * 60 * 60 * 1000;
+
+/** Paddle Billing transaction ids, as Paddle puts them in `_ptxn`. */
+const PROVIDER_TRANSACTION_PATTERN = /^txn_[A-Za-z0-9]{8,64}$/;
 
 export interface CheckoutDeps {
   client: ApiClient;
@@ -165,6 +173,7 @@ export class CheckoutClient implements CheckoutAPI {
       });
       const session = toSession(output, embedded ? "embedded" : "hosted", this.deps.config.currency);
       this.session = session;
+      this.remember(session);
       this.deps.emitter.emit("checkout:started", session);
       if (session.mode === "free") {
         this.attempt = null;
@@ -214,6 +223,7 @@ export class CheckoutClient implements CheckoutAPI {
       });
       const session = toSession(output, "hosted", this.deps.config.currency);
       this.session = session;
+      this.remember(session);
       this.deps.emitter.emit("checkout:started", session);
       if (session.mode === "free") {
         this.attempt = null;
@@ -280,17 +290,36 @@ export class CheckoutClient implements CheckoutAPI {
     } catch {
       return null;
     }
-    const orderId = clean(params.get("order_id"), 80);
-    const lookupToken = clean(params.get("lookup_token"), 200);
+    let orderId = clean(params.get("order_id"), 80);
+    let lookupToken = clean(params.get("lookup_token"), 200);
     const paymentIntentId = clean(params.get("payment_intent"), 200);
+    // Paddle puts the transaction to pay in `_ptxn`; the Paddle adapter
+    // renames it to `paddle_txn` so Paddle.js does not open it on its own.
+    let providerTransactionId = clean(params.get("_ptxn") || params.get("paddle_txn"), 80);
+    if (!PROVIDER_TRANSACTION_PATTERN.test(providerTransactionId)) providerTransactionId = "";
+    let recovered = false;
+    if (!orderId && !lookupToken) {
+      // A provider page that returns to one fixed address (Paddle-hosted
+      // checkout) brings no order reference; use the checkout this browser
+      // saved right before leaving for it.
+      const remembered = this.remembered();
+      if (!remembered || !remembered.awaitingReturn) return null;
+      orderId = remembered.orderId;
+      lookupToken = remembered.lookupToken;
+      providerTransactionId = providerTransactionId || clean(remembered.clientData.checkout_id, 80);
+      if (!PROVIDER_TRANSACTION_PATTERN.test(providerTransactionId)) providerTransactionId = "";
+      recovered = true;
+    }
     if (!orderId || !lookupToken) return null;
     if (!/^[A-Za-z0-9_-]{1,80}$/.test(orderId) || !/^[A-Za-z0-9_-]{20,200}$/.test(lookupToken)) return null;
-    return { orderId, lookupToken, paymentIntentId, confirmed: null, error: null };
+    return { orderId, lookupToken, paymentIntentId, providerTransactionId, recovered, confirmed: null, error: null };
   }
 
   async handleReturn(url?: string): Promise<CheckoutReturn | null> {
     const parsed = this.parseReturn(url);
     if (!parsed) return null;
+    // A recovered return is used once, so a later visit shows checkout again.
+    if (parsed.recovered) this.updateRemembered({ awaitingReturn: false });
     if (!parsed.paymentIntentId) return parsed;
     try {
       const result = await this.confirm({
@@ -303,6 +332,54 @@ export class CheckoutClient implements CheckoutAPI {
       // The webhook settles the order regardless; the status view keeps polling.
       return { ...parsed, confirmed: false, error: isGrigoraError(error) ? error : toGrigoraError(error) };
     }
+  }
+
+  remembered(orderId?: string): RememberedCheckout | null {
+    const saved = readJson<Partial<RememberedCheckout> | null>(this.deps.config.storage, this.rememberKey(), null);
+    if (!saved || typeof saved !== "object") return null;
+    const entry: RememberedCheckout = {
+      orderId: clean(saved.orderId, 80),
+      lookupToken: clean(saved.lookupToken, 200),
+      provider: clean(saved.provider, 40),
+      clientData: saved.clientData && typeof saved.clientData === "object" ? (saved.clientData as Raw) : {},
+      awaitingReturn: saved.awaitingReturn === true,
+      at: toInt(saved.at, 0),
+    };
+    if (!entry.orderId || !entry.lookupToken || Date.now() - entry.at > REMEMBER_MS || entry.at > Date.now() + 60_000) return null;
+    if (orderId !== undefined && clean(orderId, 80) !== entry.orderId) return null;
+    return entry;
+  }
+
+  awaitReturn(orderId: string): void {
+    if (!this.remembered(orderId)) return;
+    this.updateRemembered({ awaitingReturn: true, at: Date.now() });
+  }
+
+  forget(): void {
+    this.deps.config.storage.remove(this.rememberKey());
+  }
+
+  private rememberKey(): string {
+    return `grigora-commerce-checkout-${this.deps.projectId}`;
+  }
+
+  /** Keep a hosted session's public data so the page it returns to can finish it. */
+  private remember(session: CheckoutSession): void {
+    if (session.mode !== "hosted" || !session.orderId || !session.lookupToken) return;
+    writeJson(this.deps.config.storage, this.rememberKey(), {
+      orderId: session.orderId,
+      lookupToken: session.lookupToken,
+      provider: session.provider,
+      clientData: session.clientData,
+      awaitingReturn: false,
+      at: Date.now(),
+    } satisfies RememberedCheckout);
+  }
+
+  private updateRemembered(patch: Partial<RememberedCheckout>): void {
+    const current = this.remembered();
+    if (!current) return;
+    writeJson(this.deps.config.storage, this.rememberKey(), { ...current, ...patch } satisfies RememberedCheckout);
   }
 
   private attemptFor(fingerprint: string): Attempt {

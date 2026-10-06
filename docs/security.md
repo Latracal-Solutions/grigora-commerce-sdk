@@ -17,14 +17,14 @@ Every checkout POST carries `Idempotency-Key` (a UUID per distinct checkout atte
 If your site sends a CSP, allow:
 
 ```
-script-src  https://cdn.grigora.co https://js.stripe.com https://checkout.razorpay.com
-connect-src https://api.grigora.co https://api.stripe.com https://r.stripe.com https://checkout.razorpay.com https://lumberjack.razorpay.com
-frame-src   https://js.stripe.com https://hooks.stripe.com https://checkout.razorpay.com https://api.razorpay.com
+script-src  https://cdn.grigora.co https://js.stripe.com https://checkout.razorpay.com https://*.paddle.com
+connect-src https://api.grigora.co https://api.stripe.com https://r.stripe.com https://checkout.razorpay.com https://lumberjack.razorpay.com https://*.paddle.com https://*.paddle.io
+frame-src   https://js.stripe.com https://hooks.stripe.com https://checkout.razorpay.com https://api.razorpay.com https://*.paddle.com https://*.paddle.io
 img-src     https: data:
 style-src   'unsafe-inline'   (the SDK injects one <style>; or set data-styles="false" and ship the CSS yourself)
 ```
 
-PayPal and Paddle are hosted redirects and need nothing in your CSP. Add `https://cdn.jsdelivr.net` if you load the bundle from jsDelivr.
+PayPal is a hosted redirect and needs nothing in your CSP. Paddle runs Paddle.js on your page, hence the `*.paddle.com` / `*.paddle.io` entries above. Add `https://cdn.jsdelivr.net` if you load the bundle from jsDelivr.
 
 ## Return URL allow-list
 
