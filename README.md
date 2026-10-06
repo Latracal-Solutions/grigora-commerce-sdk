@@ -103,7 +103,7 @@ npm test               # vitest (jsdom)
 npm run build          # every package, in dependency order
 ```
 
-Releases: `node scripts/set-version.mjs X.Y.Z`, commit, tag `vX.Y.Z`, push. The release workflow publishes every package to npm with provenance and uploads the CDN bundle to `cdn.grigora.co/commerce/{vX,X.Y.Z,latest}/sdk.js`. See [CONTRIBUTING](CONTRIBUTING.md).
+Releases: `node scripts/set-version.mjs X.Y.Z`, commit, tag `vX.Y.Z`, push. The release workflow publishes packages to npm with provenance. Deploy the browser bundle independently with the manual **Deploy Commerce SDK to R2 CDN** workflow; its default is a dry run. See [CDN deployment](docs/cdn-deployment.md) and [CONTRIBUTING](CONTRIBUTING.md).
 
 ## License
 

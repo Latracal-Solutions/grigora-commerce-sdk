@@ -21,10 +21,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "size": "size-limit",
-    "check": "npm run typecheck && npm test && npm run build && npm run size",
+    "check": "npm run typecheck && npm test && npm run test:cdn && npm run build && npm run size",
     "version:set": "node scripts/set-version.mjs",
     "publish:all": "node scripts/publish-all.mjs",
-    "sync:api": "node scripts/sync-api.mjs"
+    "cdn:plan": "node scripts/deploy-cdn.mjs --dry-run",
+    "test:cdn": "node --test scripts/deploy-cdn.test.mjs"
   },
   "devDependencies": {
     "@size-limit/file": "^11.1.6",

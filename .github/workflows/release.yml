@@ -1,14 +1,7 @@
 name: Release
 
-# Tag a commit `vX.Y.Z` (after `node scripts/set-version.mjs X.Y.Z`) to
-# publish every package to npm with provenance and push the CDN bundle to
-# cdn.grigora.co under three paths:
-#   /commerce/vX/sdk.js        pinned major, short cache + stale-while-revalidate
-#   /commerce/X.Y.Z/sdk.js     exact version, immutable
-#   /commerce/latest/sdk.js    newest release
-#
-# Secrets: NPM_TOKEN (npm automation token), AWS_ACCESS_ID / AWS_SECRET_KEY
-# (write access to the cdn-grigora-co bucket), optional CDN_CLOUDFRONT_DISTRIBUTION_ID.
+# npm packages and GitHub releases only. CDN publishing is an independent,
+# manual R2 workflow in deploy-cdn.yml, with its own credentials and checks.
 
 on:
   push:
@@ -21,10 +14,6 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      # The secrets context is not allowed in a step `if`; expose the check as an env flag.
-      HAS_AWS: ${{ secrets.AWS_ACCESS_ID != '' }}
-      CDN_DISTRIBUTION_ID: ${{ secrets.CDN_CLOUDFRONT_DISTRIBUTION_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -52,37 +41,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CI: "true"
         run: node scripts/publish-all.mjs
-
-      - name: Upload the CDN bundle
-        if: env.HAS_AWS == 'true'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
-          BUCKET: cdn-grigora-co
-        run: |
-          set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
-          MAJOR="v${VERSION%%.*}"
-          SRC=packages/sdk/dist
-          put() { # $1 local, $2 key, $3 cache-control
-            aws s3 cp "$1" "s3://$BUCKET/commerce/$2" --content-type "application/javascript; charset=utf-8" --cache-control "$3"
-          }
-          for name in sdk.js sdk.min.js; do
-            put "$SRC/$name" "$VERSION/$name" "public, max-age=31536000, immutable"
-            put "$SRC/$name" "$MAJOR/$name" "public, max-age=300, stale-while-revalidate=86400"
-            put "$SRC/$name" "latest/$name" "public, max-age=300, stale-while-revalidate=86400"
-          done
-          for map in "$SRC"/*.map; do
-            [ -f "$map" ] || continue
-            base="$(basename "$map")"
-            aws s3 cp "$map" "s3://$BUCKET/commerce/$VERSION/$base" --content-type application/json --cache-control "public, max-age=31536000, immutable"
-            aws s3 cp "$map" "s3://$BUCKET/commerce/$MAJOR/$base" --content-type application/json --cache-control "public, max-age=300"
-            aws s3 cp "$map" "s3://$BUCKET/commerce/latest/$base" --content-type application/json --cache-control "public, max-age=300"
-          done
-          if [ -n "$CDN_DISTRIBUTION_ID" ]; then
-            aws cloudfront create-invalidation --distribution-id "$CDN_DISTRIBUTION_ID" --paths "/commerce/$MAJOR/*" "/commerce/latest/*"
-          fi
 
       - name: GitHub release
         uses: softprops/action-gh-release@v2

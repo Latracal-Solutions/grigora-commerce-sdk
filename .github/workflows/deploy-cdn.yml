@@ -1,0 +1,92 @@
+name: Deploy Commerce SDK to R2 CDN
+run-name: Commerce SDK CDN — ${{ inputs.publish && 'publish' || 'dry run' }} — ${{ inputs.ref || github.ref_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag, or full commit SHA to build (use an older SHA to roll back)'
+        required: false
+        type: string
+      publish:
+        description: 'Upload to R2 and update the live v1 CDN URL'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commerce-sdk-cdn-v1
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      revision: ${{ steps.revision.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+      - id: revision
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Prepare deployment manifest (no upload)
+        run: node scripts/deploy-cdn.mjs --dry-run
+        env:
+          SDK_REVISION: ${{ steps.revision.outputs.sha }}
+          CDN_PUBLIC_BASE: ${{ vars.CDN_PUBLIC_BASE || 'https://cdn.grigora.co' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: commerce-sdk-cdn-${{ steps.revision.outputs.sha }}
+          path: |
+            packages/sdk/dist/sdk.js
+            packages/sdk/dist/sdk.min.js
+            packages/sdk/dist/sdk.js.map
+            packages/sdk/dist/sdk.min.js.map
+            packages/sdk/dist/release.json
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: ${{ inputs.publish }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: commerce-sdk-cdn
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.revision }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: commerce-sdk-cdn-${{ needs.build.outputs.revision }}
+          path: packages/sdk/dist
+      - name: Upload and verify the CDN release
+        run: node scripts/deploy-cdn.mjs --publish
+        env:
+          SDK_REVISION: ${{ needs.build.outputs.revision }}
+          CDN_PUBLIC_BASE: ${{ vars.CDN_PUBLIC_BASE || 'https://cdn.grigora.co' }}
+          R2_BUCKET: ${{ vars.R2_BUCKET || 'cdn-grigora-co' }}
+          R2_S3_ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      - name: Release summary
+        env:
+          SDK_REVISION: ${{ needs.build.outputs.revision }}
+          CDN_PUBLIC_BASE: ${{ vars.CDN_PUBLIC_BASE || 'https://cdn.grigora.co' }}
+        run: |
+          printf 'Published and verified commit `%s`.\n\nSDK: %s/commerce/v1/sdk.js\n' "$SDK_REVISION" "$CDN_PUBLIC_BASE" >> "$GITHUB_STEP_SUMMARY"
