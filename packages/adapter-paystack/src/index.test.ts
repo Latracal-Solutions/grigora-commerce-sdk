@@ -35,7 +35,7 @@ describe("Paystack adapter", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].accessCode).toBe("acc_1");
     calls[0].callbacks.onSuccess?.({ reference: "grg-01habcdefghjklmnopqrstuv", status: "success" });
-    expect(ctx.onComplete).toHaveBeenCalledWith({ paystack_reference: "grg-01habcdefghjklmnopqrstuv", customer_email: "ada@example.com", customer_name: "Ada" });
+    expect(ctx.onComplete).toHaveBeenCalledWith({ paystack_reference: "grg-01habcdefghjklmnopqrstuv", lookup_token: "tok", customer_email: "ada@example.com", customer_name: "Ada" });
     calls[0].callbacks.onCancel?.();
     expect(ctx.onCancel).not.toHaveBeenCalled();
     expect(adapter.submitLabel?.(ctx)).toBe("Pay ₦5000.00");

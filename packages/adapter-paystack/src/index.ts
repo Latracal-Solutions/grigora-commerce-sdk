@@ -83,6 +83,9 @@ export function createPaystackAdapter(options: PaystackAdapterOptions = {}): Pay
             // The server binds the order to its own stored reference; this is
             // only echoed back so a mismatch can be refused.
             paystack_reference: String(transaction?.reference || transaction?.trxref || reference),
+            // The reference is derived from the order id, so the API asks for
+            // the buyer's lookup token before answering for the order.
+            lookup_token: context.session.lookupToken,
             customer_email: billing.email,
             customer_name: billing.name,
           });
