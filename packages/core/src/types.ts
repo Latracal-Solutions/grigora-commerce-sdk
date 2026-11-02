@@ -10,7 +10,7 @@ export type { CurrencyAPI, FormatOptions } from "./currency";
 
 export type PricingType = "one_time" | "pay_what_you_want" | "subscription" | (string & {});
 export type ProductType = "physical" | "digital" | "download" | "course" | "template" | "membership" | "service" | (string & {});
-export type ProviderId = "stripe" | "razorpay" | "paypal" | "paddle" | "manual" | "hosted" | (string & {});
+export type ProviderId = "stripe" | "razorpay" | "paypal" | "paddle" | "paystack" | "manual" | "hosted" | (string & {});
 /** How the shopper should pay: let the store decide, force the in-page form, or always redirect. */
 export type PaymentPreference = "auto" | "embedded" | "hosted";
 export type CheckoutMode = "embedded" | "hosted" | "unavailable";
@@ -209,6 +209,7 @@ export interface StoreCheckout {
   message: string;
   stripePublishableKey: string;
   razorpayKeyId: string;
+  paystackPublicKey: string;
 }
 
 export interface StoreSettings {

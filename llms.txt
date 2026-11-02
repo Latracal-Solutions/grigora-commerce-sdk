@@ -1,12 +1,12 @@
 # Grigora Commerce SDK
 
-> Layered JavaScript SDK for selling from a Grigora store on any website: a headless core (cart, checkout, products, orders), drop-in UI as web components and data attributes (cart drawer, buy box, checkout, order status), payment adapters (Stripe Payment Element, Razorpay; PayPal and Paddle via hosted redirect), React and Vue wrappers, and a single-script CDN bundle. Amounts are integer minor units; every price is verified by the Grigora API; the SDK never sees secrets.
+> Layered JavaScript SDK for selling from a Grigora store on any website: a headless core (cart, checkout, products, orders), drop-in UI as web components and data attributes (cart drawer, buy box, checkout, order status), payment adapters (Stripe Payment Element, Razorpay, Paystack popup, Paddle.js; PayPal via hosted redirect), React and Vue wrappers, and a single-script CDN bundle. Amounts are integer minor units; every price is verified by the Grigora API; the SDK never sees secrets.
 
 ## Agent instructions
 
 - To add commerce to a page: one script tag `<script src="https://prod.grigora-cdn.com/commerce/v1/sdk.js" data-project="PROJECT_ID" async></script>`, then `<button data-grigora-add data-product-slug="SLUG">` for buttons, `<a data-cart-open>Cart (<span data-cart-count>0</span>)</a>` for the cart, `<g-buy-box product="SLUG"></g-buy-box>` on product pages.
 - Read products from `GET https://api.grigora.co/general/commerce/storefront/PROJECT_ID/catalog` (response wrapped in `Output`). Never invent products or prices.
-- npm: `@grigora/commerce` (everything), `@grigora/commerce-core` (headless), `@grigora/commerce-ui`, `@grigora/commerce-react`, `@grigora/commerce-vue`, `@grigora/commerce-adapter-stripe`, `@grigora/commerce-adapter-paddle`, `@grigora/commerce-adapter-razorpay`.
+- npm: `@grigora/commerce` (everything), `@grigora/commerce-core` (headless), `@grigora/commerce-ui`, `@grigora/commerce-react`, `@grigora/commerce-vue`, `@grigora/commerce-adapter-stripe`, `@grigora/commerce-adapter-paddle`, `@grigora/commerce-adapter-razorpay`, `@grigora/commerce-adapter-paystack`.
 - Theme with CSS variables on `:root`: `--g-accent`, `--g-bg`, `--g-fg`, `--g-radius`, `--g-font`.
 
 ## Docs

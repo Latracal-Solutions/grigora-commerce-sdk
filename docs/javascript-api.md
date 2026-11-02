@@ -137,7 +137,7 @@ providers.register(adapter); providers.get(id); providers.has(id); providers.lis
 registerProvider(adapter)   // module-level: applies to the default instance and every instance created afterwards
 ```
 
-`PaymentProviderAdapter`: `{ id, supportsEmbedded, loadScript?(), mount(ctx), submit(ctx), destroy(), submitLabel?(ctx), handlesHostedSession?(session), settlesByWebhook?, resume?(ctx) }`. The built-in `hosted` adapter redirects to `session.checkoutUrl`. `handlesHostedSession` lets an adapter pay a hosted session on the page. `settlesByWebhook` skips `/checkout/embedded/confirm`. `resume` collects payment for an unpaid order from `<g-order-status>`. Paddle uses all three. Stripe, Razorpay and Paddle adapters live in their own packages.
+`PaymentProviderAdapter`: `{ id, supportsEmbedded, loadScript?(), mount(ctx), submit(ctx), destroy(), submitLabel?(ctx), handlesHostedSession?(session), settlesByWebhook?, resume?(ctx) }`. The built-in `hosted` adapter redirects to `session.checkoutUrl`. `handlesHostedSession` lets an adapter pay a hosted session on the page. `settlesByWebhook` skips `/checkout/embedded/confirm`. `resume` collects payment for an unpaid order from `<g-order-status>`. Paddle uses all three. Stripe, Razorpay, Paddle and Paystack adapters live in their own packages.
 
 ## Events
 

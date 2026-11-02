@@ -17,12 +17,13 @@ That is a working store with checkout.
 
 | Package | What | Size (brotli) |
 | --- | --- | --- |
-| [`@grigora/commerce`](packages/sdk) | Everything: core + UI + Stripe + Razorpay + Paddle adapters, `createStorefront()`, and the CDN bundle `dist/sdk.min.js` | bundle ≈ 35 kB |
+| [`@grigora/commerce`](packages/sdk) | Everything: core + UI + Stripe + Razorpay + Paddle + Paystack adapters, `createStorefront()`, and the CDN bundle `dist/sdk.min.js` | bundle ≈ 35 kB |
 | [`@grigora/commerce-core`](packages/core) | Headless client: cart, products, checkout, orders, currency, typed events. Zero dependencies, SSR-safe | ≈ 17 kB |
 | [`@grigora/commerce-ui`](packages/ui) | Web components and data attributes: `<g-cart-drawer>`, `<g-buy-box>`, `<g-checkout>`, `<g-order-status>`… | ≈ 24 kB |
 | [`@grigora/commerce-adapter-stripe`](packages/adapter-stripe) | Stripe Payment Element (embedded) | ≈ 1 kB |
 | [`@grigora/commerce-adapter-razorpay`](packages/adapter-razorpay) | Razorpay Checkout (overlay) | ≈ 1 kB |
 | [`@grigora/commerce-adapter-paddle`](packages/adapter-paddle) | Paddle Billing checkout (Paddle.js overlay or inline) | ≈ 2 kB |
+| [`@grigora/commerce-adapter-paystack`](packages/adapter-paystack) | Paystack Popup (cards, bank transfer, USSD, mobile money) | ≈ 1 kB |
 | [`@grigora/commerce-react`](packages/react) | Provider, hooks (`useCart`, `useProduct`…), components | ≈ 2.5 kB |
 | [`@grigora/commerce-vue`](packages/vue) | Plugin and composables | ≈ 1 kB |
 
@@ -35,7 +36,7 @@ sdk.js (CDN)  →  window.Grigora.Commerce, auto-init from <script data-project>
 @grigora/commerce-react / -vue
 @grigora/commerce-ui          drawer · badge · buy box · checkout · order status · data-* bindings
 @grigora/commerce-core        client · cart · catalog · checkout · orders · currency · events · providers
-adapters                      stripe (Payment Element) · razorpay (overlay) · paddle (overlay/inline) · hosted redirect (built in)
+adapters                      stripe (Payment Element) · razorpay (overlay) · paddle (overlay/inline) · paystack (popup) · hosted redirect (built in)
 Grigora commerce API          https://api.grigora.co/general/commerce
 ```
 
@@ -74,7 +75,7 @@ const session = await commerce.checkout.start({ billingAddress });   // hosted o
 
 - **Cart drawer** with live server totals, quantity steppers, stock badges, discount codes, empty and error states; `role="dialog"`, focus trap, Escape, inert background, reduced-motion aware.
 - **Buy box** for product pages: price and compare-at, option chips with sold-out values marked, quantity, Add to cart / Buy now, pay-what-you-want.
-- **Checkout**: contact, billing and shipping addresses validated with the API's own rules, shipping methods, discount, tax, then payment through the store's gateway: Stripe Payment Element or Razorpay in-page, hosted redirect for Stripe Checkout / PayPal / Paddle, and instant completion for free orders. Edits after a payment is prepared cancel the pending order automatically. Falls back to hosted if an embedded script is blocked.
+- **Checkout**: contact, billing and shipping addresses validated with the API's own rules, shipping methods, discount, tax, then payment through the store's gateway: Stripe Payment Element, Razorpay or Paystack in-page, hosted redirect for Stripe Checkout / PayPal / Paddle, and instant completion for free orders. Edits after a payment is prepared cancel the pending order automatically. Falls back to hosted if an embedded script is blocked.
 - **Order status** that verifies the order through the API, polls while pending, and clears the cart only when paid.
 - **Idempotent checkout** (`Idempotency-Key` + persistent client id) so retries never double-charge.
 - **Compatibility** with Grigora's existing storefront scripts: same cart storage key and shape, same client id, same `data-cart-launch` / `data-cart-count` attributes ([migration](docs/migration-from-cart-js.md)).

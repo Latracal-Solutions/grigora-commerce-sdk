@@ -14,6 +14,7 @@ import {
 import { installUI, type UIHandle, type UIOptions } from "@grigora/commerce-ui";
 import { stripeAdapter } from "@grigora/commerce-adapter-stripe";
 import { razorpayAdapter } from "@grigora/commerce-adapter-razorpay";
+import { paystackAdapter } from "@grigora/commerce-adapter-paystack";
 import { paddleAdapter } from "@grigora/commerce-adapter-paddle";
 
 export interface StorefrontOptions extends Omit<GrigoraCommerceConfig, "ui"> {
@@ -28,7 +29,7 @@ export interface StorefrontOptions extends Omit<GrigoraCommerceConfig, "ui"> {
  */
 export function createStorefront(options: StorefrontOptions): GrigoraCommerce {
   const { ui, adapters, ...config } = options;
-  for (const adapter of [stripeAdapter, razorpayAdapter, paddleAdapter, ...(adapters || [])]) registerProvider(adapter);
+  for (const adapter of [stripeAdapter, razorpayAdapter, paddleAdapter, paystackAdapter, ...(adapters || [])]) registerProvider(adapter);
   const commerce = initCore({ ...config, ui: (ui && typeof ui === "object" ? ui : {}) as unknown as Record<string, unknown> });
   if (isBrowser() && (ui === undefined || (ui as { enabled?: boolean }).enabled !== false)) {
     if (!commerce.ui) installUI(commerce, ui && typeof ui === "object" ? ui : {});
@@ -49,7 +50,7 @@ export interface GrigoraCommerceGlobal {
   onReady(callback: (commerce: GrigoraCommerce) => void): void;
   registerProvider(adapter: PaymentProviderAdapter): void;
   installUI(commerce: GrigoraCommerce, options?: UIOptions): UIHandle;
-  adapters: { stripe: PaymentProviderAdapter; razorpay: PaymentProviderAdapter; paddle: PaymentProviderAdapter };
+  adapters: { stripe: PaymentProviderAdapter; razorpay: PaymentProviderAdapter; paddle: PaymentProviderAdapter; paystack: PaymentProviderAdapter };
   openCart(): void;
   closeCart(): void;
   openCheckout(): void;
@@ -84,7 +85,7 @@ export function installGlobal(): GrigoraCommerceGlobal {
     onReady,
     registerProvider,
     installUI,
-    adapters: { stripe: stripeAdapter, razorpay: razorpayAdapter, paddle: paddleAdapter },
+    adapters: { stripe: stripeAdapter, razorpay: razorpayAdapter, paddle: paddleAdapter, paystack: paystackAdapter },
     openCart: () => withUI((ui) => ui.openCart()),
     closeCart: () => withUI((ui) => ui.closeCart()),
     openCheckout: () => withUI((ui) => ui.openCheckout()),

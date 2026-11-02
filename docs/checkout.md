@@ -10,12 +10,20 @@ The store settings (`GET /storefront/:project/settings`) carry a server-computed
 | Stripe with `checkout_mode: stripe_hosted` or Stripe Tax | `hosted` (Stripe Checkout page) |
 | Razorpay with key id + secret + webhook | `embedded` (overlay) |
 | PayPal, credentials + webhook | `hosted` (redirect to PayPal) |
+| Paystack, secret key + public key + confirmed webhook | `embedded` (Paystack popup) |
+| Paystack, secret key + confirmed webhook, no public key | `hosted` (redirect to Paystack) |
 | Paddle, API key + webhook + client-side token (overlay/inline) or hosted checkout link | `hosted`: the Paddle adapter opens Paddle.js on the page for the transaction (see below) |
 | Anything missing | `unavailable`, with a merchant-facing `message` |
 
-The SDK then applies the integrator's preference (`payment: "auto" | "embedded" | "hosted"`) and checks that an adapter for the provider is registered. The CDN bundle and `@grigora/commerce` ship Stripe, Razorpay and Paddle adapters; a headless `@grigora/commerce-core` install without adapters always uses hosted.
+The SDK then applies the integrator's preference (`payment: "auto" | "embedded" | "hosted"`) and checks that an adapter for the provider is registered. The CDN bundle and `@grigora/commerce` ship Stripe, Razorpay, Paddle and Paystack adapters; a headless `@grigora/commerce-core` install without adapters always uses hosted.
 
 If an embedded adapter's script fails to load (blocked by an extension, CSP, network), `<g-checkout>` cancels the pending order and restarts as hosted. Nothing is lost: the pending order held stock for a moment and was released.
+
+## Paystack
+
+The API initializes a Paystack transaction for the order (reference `grg-<order id>`). With the store's public key, the Paystack adapter resumes that transaction in Paystack's popup; without it, checkout redirects to Paystack's page for the same transaction and Paystack sends the shopper back to your success page. Either way the API confirms the payment by asking Paystack (`GET /transaction/verify`) and checks the reference, amount and currency against the order. The popup's success callback, the shopper's return and Paystack's signed `charge.success` webhook only trigger that check, so a late webhook does not leave a paid order pending.
+
+Paystack signs webhooks with the store's secret key and keeps one webhook URL per mode. In Grigora the merchant adds the store's webhook URL in Paystack (Settings → API Keys & Webhooks) and confirms it; checkout stays closed until then. Paystack amounts are the base amount × 100 for every currency, the same minor units the SDK uses.
 
 ## Paddle
 
@@ -66,4 +74,4 @@ Every `/checkout/session`, `/checkout/embedded` and `/checkout/create` request c
 
 ## Testing
 
-Use the provider's test mode in Grigora settings (`checkout.testMode` is exposed and shown as a "Test mode" pill in the checkout). Stripe test cards, Razorpay test keys and the sandbox accounts of PayPal/Paddle all flow through the same code. Paddle loads its sandbox environment when the session says `environment: "sandbox"`.
+Use the provider's test mode in Grigora settings (`checkout.testMode` is exposed and shown as a "Test mode" pill in the checkout). Stripe test cards, Razorpay and Paystack test keys and the sandbox accounts of PayPal/Paddle all flow through the same code. Paddle loads its sandbox environment when the session says `environment: "sandbox"`.

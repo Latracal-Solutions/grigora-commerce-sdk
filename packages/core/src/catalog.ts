@@ -164,6 +164,7 @@ export function mapStore(raw: Raw, projectId: string): StoreSettings {
       message: clean(checkout.message, 400),
       stripePublishableKey: clean(checkout.stripe_publishable_key, 240),
       razorpayKeyId: clean(checkout.razorpay_key_id, 240),
+      paystackPublicKey: clean(checkout.paystack_public_key, 240),
     },
     shipping: {
       configured: shipping.configured === true,

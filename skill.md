@@ -69,7 +69,7 @@ Class names for deeper styling: `.g-btn-primary`, `.g-cart-drawer`, `.g-cart-lin
 - Never put secret keys in the page. The SDK only uses publishable keys the store exposes.
 - Never build your own cart storage, checkout form or payment form.
 - Use `data-product-slug` (or `data-product-id`) from the catalog only.
-- The payment provider is chosen by the merchant; the SDK handles Stripe, Razorpay, PayPal and Paddle.
+- The payment provider is chosen by the merchant; the SDK handles Stripe, Razorpay, PayPal, Paddle and Paystack.
 - Reserved when using the platform pages on a Grigora site: `/cart`, `/checkout`, `/thank-you`, `/invoice`.
 
 ## Advanced (JavaScript)

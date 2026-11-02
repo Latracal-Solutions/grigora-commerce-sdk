@@ -25,6 +25,11 @@
     "limit": "3 KB"
   },
   {
+    "name": "@grigora/commerce-adapter-paystack (ESM, brotli)",
+    "path": "packages/adapter-paystack/dist/index.js",
+    "limit": "3 KB"
+  },
+  {
     "name": "@grigora/commerce-react (ESM, brotli, excludes core/ui)",
     "path": "packages/react/dist/index.js",
     "limit": "6 KB"
@@ -35,7 +40,7 @@
     "limit": "3 KB"
   },
   {
-    "name": "sdk.min.js (CDN bundle: core + UI + Stripe + Razorpay + Paddle, brotli)",
+    "name": "sdk.min.js (CDN bundle: core + UI + Stripe + Razorpay + Paddle + Paystack, brotli)",
     "path": "packages/sdk/dist/sdk.min.js",
     "limit": "45 KB"
   }

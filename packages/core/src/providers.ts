@@ -75,6 +75,8 @@ export function providerLabel(provider: ProviderId): string {
       return "PayPal";
     case "paddle":
       return "Paddle";
+    case "paystack":
+      return "Paystack";
     case "manual":
       return "the store";
     default:
