@@ -374,6 +374,12 @@ export interface CheckoutInput {
   discountCode?: string | null;
   successUrl?: string;
   cancelUrl?: string;
+  /**
+   * Affiliate referral id. Default: captured automatically from the visitor's
+   * affiliate tracker (any tool that supports Stripe Payment Links), or set via
+   * `window.GrigoraCommerce.setReferral(id)`. Sent to Stripe as client_reference_id.
+   */
+  referralId?: string;
 }
 
 export interface CheckoutStartOptions {
@@ -392,6 +398,12 @@ export interface SingleCheckoutInput {
   provider?: ProviderId;
   successUrl?: string;
   cancelUrl?: string;
+  /**
+   * Affiliate referral id. Default: captured automatically from the visitor's
+   * affiliate tracker (any tool that supports Stripe Payment Links), or set via
+   * `window.GrigoraCommerce.setReferral(id)`. Sent to Stripe as client_reference_id.
+   */
+  referralId?: string;
 }
 
 export interface CheckoutSession {

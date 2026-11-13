@@ -25,6 +25,7 @@ import type {
 import { readJson, writeJson } from "./storage";
 import { absoluteUrl, clean, currentPageUrl, currentUrl, isBrowser, stableStringify, toInt, uuid, type Logger } from "./util";
 import { addressErrorMessage, addressErrors, normalizeAddress, normalizeShippingAddress, toApiAddress } from "./validation";
+import { cleanReferral, currentReferral, installReferralCapture } from "./referral";
 
 type Raw = Record<string, unknown>;
 
@@ -66,6 +67,8 @@ export class CheckoutClient implements CheckoutAPI {
 
   constructor(deps: CheckoutDeps) {
     this.deps = deps;
+    // Probe must be on the page early so the merchant's affiliate tracker decorates it.
+    installReferralCapture();
   }
 
   current(): CheckoutSession | null {
@@ -165,6 +168,8 @@ export class CheckoutClient implements CheckoutAPI {
     const attempt = this.attemptFor(stableStringify({ ...body, embedded }));
     body.checkout_client_id = this.deps.clientId();
     body.idempotency_key = attempt.key;
+    const referral = cleanReferral(input.referralId) || currentReferral();
+    if (referral) body.referral_id = referral;
 
     try {
       const output = await this.deps.client.post<Raw>(embedded ? "/checkout/embedded" : "/checkout/session", body, {
@@ -215,6 +220,8 @@ export class CheckoutClient implements CheckoutAPI {
     const attempt = this.attemptFor(stableStringify({ ...body, single: true }));
     body.checkout_client_id = this.deps.clientId();
     body.idempotency_key = attempt.key;
+    const referral = cleanReferral(input.referralId) || currentReferral();
+    if (referral) body.referral_id = referral;
 
     try {
       const output = await this.deps.client.post<Raw>("/checkout/create", body, {
